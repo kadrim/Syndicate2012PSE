@@ -1,37 +1,36 @@
-# ME3 Private Server Emulator
+# Syndicate 2012 Private Server Emulator
 
-- Author: [Warranty Voider](https://github.com/zeroKilo)
-- Maintainer: [Erik JS](https://github.com/Erik-JS)
+This is a Fork from the [ME3 Private Server Emulator](https://github.com/PrivateServerEmulator/ME3PSE).
 
-This is a Private Server Emulator for Mass Effect 3 that emulates the online server. It includes a profile generator, guest login for Origin players, a packetviewer and editing of the player settings/statistics.
+It is modified to allow playing the Coop-Missions of the Syndicate 2012 Game from Starbreeze Studios / Electronic Arts
 
-Main features: create match, join match, galactic readiness, promotions, leaderboards.
+Currently this is a heavy WIP and will only run with the Xbox360 Version of the Game. Also it currently does not allow multiplayer, instead you can
+use it to start the Coop-Missions and play them solo.
 
-Credits & Thanks to:<br/>
-Zlofenix<br/>
-Bshtornado<br/>
-Balázs
+## Howto
 
-Example Video by Erik JS:
-https://www.youtube.com/watch?v=nxAz7HEXpwk
+Coming soon
 
------------------------------------------------------------
+## Todos
 
-**Usage steps/FAQ:** https://me3tweaks.com/forums/viewtopic.php?f=10&t=9
+- Fix Coop / Multiplayer
+- Fix quitting and finishing a Mission (Crash of Emulator)
+- Save Stats of each Player
 
-**Official Discord server for user support**: https://discord.gg/x9TzEdQ
+## Thanks
 
------------------------------------------------------------
+- [Warranty Voider](https://github.com/zeroKilo)
+- [Erik JS](https://github.com/Erik-JS)
+- Zlofenix
+- Bshtornado
+- Balázs
 
-**Backup - latest release:** [Dropbox](https://www.dropbox.com/sh/epdadv2o562uqy6/AACVF75m99YOFeZMFZBRjWTQa?dl=0)
+## Donation
+I developed this project in my free time. If you like it and want to support future updates, feel free to donate here:
 
------------------------------------------------------------
+[Donate via PayPal](https://www.paypal.com/donate?hosted_button_id=RDJ8ZWG3GRWE8)
 
-**BUILT UNDER MICROSOFT VISUAL STUDIO COMMUNITY 2019.**
+Thanks in advance :-)
 
-**DESIGNED FOR WINDOWS 7 OR LATER.**
-
------------------------------------------------------------
-
-ME3 Private Server Emulator and related tools are not made or supported by EA or BioWare.<br />
-Mass Effect is a trademark of EA International (Studio and Publishing) Ltd.
+## Disclaimer
+THIS SOFTWARE IS PROVIDED "AS IS" AND ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
