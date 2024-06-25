@@ -7,6 +7,10 @@ It is modified to allow playing the Coop-Missions of the Syndicate 2012 Game fro
 Currently this is a heavy WIP and will only run with the Xbox360 Version of the Game. Also it currently does not allow multiplayer, instead you can
 use it to start the Coop-Missions and play them solo.
 
+## YouTube Video of the Server
+
+[![Syndicate 2012 Private Server Emulation in Action](https://img.youtube.com/vi/KVpIbvhUAWY/0.jpg)](https://youtu.be/KVpIbvhUAWY "Syndicate 2012 Private Server Emulation in Action")
+
 ## Howto
 
 Coming soon
