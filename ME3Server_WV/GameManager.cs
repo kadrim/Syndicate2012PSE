@@ -125,9 +125,12 @@ namespace ME3Server_WV
 
         public static GameInfo FindFirstActive()
         {
-            foreach (GameInfo g in AllGames)
+            Logger.Log("Finding games ... ", System.Drawing.Color.Blue);
+            foreach (GameInfo g in AllGames) {
+                Logger.Log("[Game] " + g.isActive + " - " + g.ID + " - " + g.OtherPlayers.Count, System.Drawing.Color.LightBlue);
                 if (g.isActive && g.OtherPlayers.Count < 3)
                     return g;
+            }
             return null;
         }
 
