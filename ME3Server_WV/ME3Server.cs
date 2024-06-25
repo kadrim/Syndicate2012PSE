@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -503,7 +503,7 @@ namespace ME3Server_WV
         public static Thread tRedirector;
         public struct RedirectorHandlerStruct
         {
-            public SslStream stream;
+            public NetworkStream stream;
             public int ID;
             public TcpClient tcpClient;
         }
@@ -524,11 +524,11 @@ namespace ME3Server_WV
                 {
                     TcpClient tcpClient = RedirectorListener.AcceptTcpClient();
                     Logger.Log("[Redirector] New client connected", Color.DarkGreen);
-                    SslStream clientStream = new SslStream(tcpClient.GetStream(), true);
-                    clientStream.AuthenticateAsServer(RedirectorCert, false, SslProtocols.Ssl3, false);
+                    //SslStream clientStream = new SslStream(tcpClient.GetStream(), true);
+                    //clientStream.AuthenticateAsServer(RedirectorCert, false, SslProtocols.Ssl3 | SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, false);
                     Thread tHandler = new Thread(threadRedirectorClientHandler);
                     RedirectorHandlerStruct h = new RedirectorHandlerStruct();
-                    h.stream = clientStream;
+                    h.stream = tcpClient.GetStream();
                     h.ID = counter++;
                     h.tcpClient = tcpClient;
                     tHandler.Start(h);                    
@@ -544,13 +544,13 @@ namespace ME3Server_WV
         {
             RedirectorHandlerStruct h = (RedirectorHandlerStruct)objs;
             Logger.Log("[Redirector Handler " + h.ID + "] Client handler started", Color.Black);
-            SslStream clientStream = h.stream;
+            NetworkStream clientStream = h.stream;
             try
             {
                 byte[] clientRequest;
-                while (clientStream.IsAuthenticated && !exitnow)
+                while (!exitnow)
                 {
-                    clientRequest = ReadContentSSL(clientStream);
+                    clientRequest = ReadContent(clientStream);
                     if (clientRequest.Length != 0)
                     {
                         clientStream.Flush();
@@ -568,13 +568,13 @@ namespace ME3Server_WV
                             Result.Add(Blaze.TdfInteger.Create("SECU", ConvertHex(Config.FindEntry("REDISECU"))));
                             Result.Add(Blaze.TdfInteger.Create("XDNS", ConvertHex(Config.FindEntry("REDIXDNS"))));
                             byte[] buff = Blaze.CreatePacket(p.Component, p.Command, 0, 0x1000, p.ID, Result);
-                            clientStream.Write(buff);
+                            clientStream.Write(buff, 0, buff.Length);
                             clientStream.Flush();
                             clientStream.Close();
                             byte[] filebuff = new byte[buff.Length + clientRequest.Length];
                             Array.Copy(clientRequest, 0, filebuff, 0, clientRequest.Length);
                             Array.Copy(buff, 0, filebuff, clientRequest.Length, buff.Length);
-                            File.WriteAllBytes(loc + "logs\\Redirector_" + String.Format(@"{0:yyyy-MM-dd_HHmmss}", DateTime.Now) + "_" + h.ID.ToString("00") + ".bin", filebuff);
+                            File.WriteAllBytes(loc + "logs" + Path.DirectorySeparatorChar + "Redirector_" + String.Format(@"{0:yyyy-MM-dd_HHmmss}", DateTime.Now) + "_" + h.ID.ToString("00") + ".bin", filebuff);
                             return;
                         }
                     }
@@ -779,6 +779,7 @@ namespace ME3Server_WV
         }
         public static void MainServerHandler(Player.PlayerInfo player, byte[] buff)
         {
+                Logger.Log("[MainServerHandler called]", Color.Brown);
                 List<Blaze.Packet> packets = Blaze.FetchAllBlazePackets(new MemoryStream(buff));
                 foreach (Blaze.Packet p in packets)
                 {
@@ -807,6 +808,9 @@ namespace ME3Server_WV
                             break;
                         case 0x7802:
                             HandleComponent_7802(player, p);
+                            break;
+                        default:
+                            Logger.Log("[Implementation totally missing] Component: " + p.Component + " Command: " + p.Command, Color.DarkRed);
                             break;
                     }
                 }
@@ -892,6 +896,12 @@ namespace ME3Server_WV
                         break;
                     case 0x50: // createPersona
                         SendEmpty(player, p, 0x1000);
+                        break;
+                    case 0xAA: // xboxLogin
+                        HandleComponent_1_Command_AA(player, p);
+                        break;
+                    default:
+                        Logger.Log("[Implementation partially missing] Component: " + p.Component + " Command: " + p.Command, Color.DarkRed);
                         break;
                 }
             }
@@ -998,6 +1008,36 @@ namespace ME3Server_WV
                     player.UserID = ConvertHex(Config.FindEntry("OriginUID")) + player.ID;
                     player.Update = true;
                     Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:98] (originLogin) Name=" + player.Name + ", PID=0x" + player.PlayerID.ToString("X"), Color.DarkOrange);
+                    CreateAuthPacket01(player, p);
+                    CreateAuthPacket02(player, p);
+                }
+            }
+        }
+        public static void HandleComponent_1_Command_AA(Player.PlayerInfo player, Blaze.Packet p)
+        {
+            List<Blaze.Tdf> content = Blaze.ReadPacketContent(p);
+            if (content.Count != 3)
+            {
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:AA] Error: HandleComponent_1_Command_AA: Count != 3 ", Color.Red);
+                return;
+            }
+            else
+            {
+                Blaze.TdfString tdfs = (Blaze.TdfString)content[0];
+                if (tdfs.Label != "GTAG")
+                {
+                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:AA] Error: HandleComponent_1_Command_AA: GTAG not found ", Color.Red);
+                    return;
+                }
+                else
+                {
+                    player.AuthString = tdfs.Value;
+                    player.Auth2String = "Ciyvab0tregdVsBtboIpeChe4G6uzC1v5_-SIxmvSLKgZgp-f4WWjnLCUtT4rmTwWsr12wYQYPnpiBW8XHX24beeTARMTteIPnx7TkKeF5HUTTTWqz-2HZfAJw4xecQArZjwI3t0GEzOL_kXDCqWMg";
+                    player.Name = Config.FindEntry("OriginName") + "_" + player.ID;
+                    player.PlayerID = ConvertHex(Config.FindEntry("OriginPID")) + player.ID;
+                    player.UserID = ConvertHex(Config.FindEntry("OriginUID")) + player.ID;
+                    player.Update = true;
+                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:AA] (xboxLogin) Name=" + player.Name + ", PID=0x" + player.PlayerID.ToString("X"), Color.DarkOrange);
                     CreateAuthPacket01(player, p);
                     CreateAuthPacket02(player, p);
                 }
@@ -2417,7 +2457,7 @@ namespace ME3Server_WV
                 buff = Blaze.CreatePacket(0x4, 0x15, 0, 0x2000, 0, form);
                 res.Write(buff, 0, buff.Length);
                 // Create Player Info
-                buff = File.ReadAllBytes(loc + "replay\\04_14_02_res.bin");
+                buff = File.ReadAllBytes(loc + "replay" + Path.DirectorySeparatorChar + "04_14_02_res.bin");
                 resp = Blaze.ReadBlazePacket(new MemoryStream(buff));
                 form = Blaze.ReadPacketContent(resp);
                 Blaze.TdfStruct DATA = (Blaze.TdfStruct)form[0];
@@ -2452,9 +2492,10 @@ namespace ME3Server_WV
                 ATTR.List2 = game.ATTR.List2;
                 List<string> attrbname = (List<string>)ATTR.List1;
                 List<string> attrbvalue = (List<string>)ATTR.List2;
-                attrbname.Insert(7, "ME3gameState");
+                // TODO why 7????
+                //attrbname.Insert(7, "ME3gameState");
                 //attrbvalue.Insert(7, "IN_LOBBY");
-                attrbvalue.Insert(7, game.GetAttrValue("ME3gameState"));
+                //attrbvalue.Insert(7, game.GetAttrValue("ME3gameState"));
                 ATTR.List1 = attrbname;
                 ATTR.List2 = attrbvalue;
                 Blaze.TdfList ADMN = (Blaze.TdfList)GAME.Values[0];

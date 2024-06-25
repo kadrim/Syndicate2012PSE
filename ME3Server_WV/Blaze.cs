@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.Drawing;
 
 namespace ME3Server_WV
 {
@@ -667,6 +668,13 @@ namespace ME3Server_WV
                     return ReadTdfTrippleVal(res, s);
                 case 0xA:
                     return ReadTdfFloat(res, s);
+                case 175:
+                case 115:
+                case 240:
+                case 112:
+                    Logger.Log("[BLAZE] Warning: Ignoring unknown Tdf Type " + res.Type + " Label: " + res.Label, Color.Orange);
+                    res.Label = "U";
+                    return ReadTdfBlob(res, s);
                 default:
                     throw new Exception("Unknown Tdf Type: " + res.Type);
             }
@@ -1048,8 +1056,13 @@ namespace ME3Server_WV
         {
             s.WriteByte(tdf.SubType1);
             s.WriteByte(tdf.SubType2);
-            CompressInteger(tdf.Count, s);
-            for (int i = 0; i < tdf.Count; i++)                
+            int numElements = tdf.Count;
+            if(tdf.List1.GetType() == typeof(System.Collections.Generic.List<string>))
+            {
+                numElements = ((System.Collections.Generic.List<string>)tdf.List1).Count();
+            }
+            CompressInteger(numElements, s);
+            for (int i = 0; i < numElements; i++)                
             {
                 switch (tdf.SubType1)
                 {
