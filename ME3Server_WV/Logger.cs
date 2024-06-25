@@ -13,8 +13,8 @@ namespace ME3Server_WV
     {
         private static object _sync = new object();
         private static string PacketLogFile = "PacketLog";
-        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + "\\";
-        public static string mainlogpath = loc + "logs\\MainServerLog.txt";
+        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
+        public static string mainlogpath = loc + "logs" + Path.DirectorySeparatorChar + "MainServerLog.txt";
         public static RichTextBox box;
         public static int LogLevel = 0;
         public static void Log(string msg, Color c, int Level = 0)
@@ -69,7 +69,7 @@ namespace ME3Server_WV
 
         public static void DeleteLogs()
         {            
-            string[] files = Directory.GetFiles(loc + "logs\\");
+            string[] files = Directory.GetFiles(loc + "logs" + Path.DirectorySeparatorChar);
             if (files.Length != 0)
             {
                 if (files.Length == 1 && files[0].Contains("MainServerLog.txt"))
@@ -94,7 +94,7 @@ namespace ME3Server_WV
             byte[] buff = d.buff;
             lock (_sync)
             {
-                FileStream fs = new FileStream(loc + "logs\\" + PacketLogFile + "_" + d.player.timestring + "_" + d.player.ID.ToString("00") + ".bin", FileMode.Append, FileAccess.Write);
+                FileStream fs = new FileStream(loc + "logs" + Path.DirectorySeparatorChar + PacketLogFile + "_" + d.player.timestring + "_" + d.player.ID.ToString("00") + ".bin", FileMode.Append, FileAccess.Write);
                 fs.Write(buff, 0, buff.Length);
                 fs.Close();
             }

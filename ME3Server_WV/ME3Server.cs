@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +20,7 @@ namespace ME3Server_WV
     public static class ME3Server
     {
         private static readonly object _sync = new object();
-        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + "\\";
+        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
         private static bool exitnow = false;
         public static bool isMITM = false;
         public static int NAT_Type;
@@ -227,7 +227,7 @@ namespace ME3Server_WV
                     byte[] buff = ReadContent(clientStream);
                     if (buff.Length != 0)
                     {                        
-                        File.WriteAllBytes(loc + "logs\\" + (counter++) + "Telemetry.bin", buff);
+                        File.WriteAllBytes(loc + "logs" + Path.DirectorySeparatorChar + (counter++) + "Telemetry.bin", buff);
                         string content = "";
                         for (int i = 0; i < buff.Length - 4; i++)
                             if (buff[i] == 0x54 &&
@@ -338,7 +338,7 @@ namespace ME3Server_WV
                             }
                             res = "GET " + get;
                             string filename = Path.GetFileName(get);
-                            string fullfilename = Path.Combine(loc, "http\\" + filename);
+                            string fullfilename = Path.Combine(loc, "http" + Path.DirectorySeparatorChar + filename);
                             if (!File.Exists(fullfilename))
                             {
                                 Logger.Log("[Http Handler] Request failed: " + res + "\nFile not found: " + filename, Color.Red);
@@ -485,7 +485,7 @@ namespace ME3Server_WV
                     if (m.Length != 0)
                     {
                         Logger.Log("[Tick Handler " + h.ID + "] Received request data, len = " + m.Length + "\n" + Blaze.HexDump(m.ToArray()), Color.Blue);
-                        File.WriteAllBytes(loc + "logs\\" + (counter++) + "Tick.bin", m.ToArray());
+                        File.WriteAllBytes(loc + "logs" + Path.DirectorySeparatorChar + (counter++) + "Tick.bin", m.ToArray());
                         clientStream.Flush();
                     }
                 }
@@ -498,7 +498,7 @@ namespace ME3Server_WV
 #endregion
 
 #region Redirector
-        public static X509Certificate2 RedirectorCert = new X509Certificate2(Path.GetDirectoryName(Application.ExecutablePath) + "\\cert\\redirector.pfx", "123456");
+        public static X509Certificate2 RedirectorCert = new X509Certificate2(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "cert" + Path.DirectorySeparatorChar + "redirector.pfx", "123456");
         public static TcpListener RedirectorListener;
         public static Thread tRedirector;
         public struct RedirectorHandlerStruct
@@ -1263,7 +1263,7 @@ namespace ME3Server_WV
         }
         public static void HandleComponent_4_Command_7(Player.PlayerInfo player, Blaze.Packet p)
         {
-            byte[] buff = File.ReadAllBytes(loc + "replay\\04_50_res.bin");
+            byte[] buff = File.ReadAllBytes(loc + "replay" + Path.DirectorySeparatorChar + "04_50_res.bin");
             Blaze.Packet pform = Blaze.ReadBlazePacket(new MemoryStream(buff));
             List<Blaze.Tdf> form = Blaze.ReadPacketContent(pform);
             List<Blaze.Tdf> input = Blaze.ReadPacketContent(p);
@@ -1286,7 +1286,7 @@ namespace ME3Server_WV
         }
         public static void HandleComponent_4_Command_4(Player.PlayerInfo player, Blaze.Packet p)
         {
-            byte[] buff = File.ReadAllBytes(loc + "replay\\04_6E_res.bin");
+            byte[] buff = File.ReadAllBytes(loc + "replay" + Path.DirectorySeparatorChar + "04_6E_res.bin");
             Blaze.Packet pform = Blaze.ReadBlazePacket(new MemoryStream(buff));
             List<Blaze.Tdf> form = Blaze.ReadPacketContent(pform);
             List<Blaze.Tdf> input = Blaze.ReadPacketContent(p);
@@ -1547,7 +1547,7 @@ namespace ME3Server_WV
                 List<Blaze.Tdf> response = new List<Blaze.Tdf>();
                 response.Add(LDLS);
 
-                //byte[] buff = File.ReadAllBytes(loc + "replay\\pl.bin");
+                //byte[] buff = File.ReadAllBytes(loc + "replay" + Path.DirectorySeparatorChar + "pl.bin");
                 //Blaze.Packet pform = Blaze.ReadBlazePacket(new MemoryStream(buff));
                 //List<Blaze.Tdf> response = Blaze.ReadPacketContent(pform);
 
@@ -1668,7 +1668,7 @@ namespace ME3Server_WV
                     switch (command)
                     {
                         case "ME3_DATA":
-                            lines = File.ReadAllLines(loc + "conf\\ME3DATA.txt");
+                            lines = File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "ME3DATA.txt");
                             List1 = new List<string>();
                             List2 = new List<string>();
                             for (int i = 0; i < lines.Length; i++)
@@ -1681,7 +1681,7 @@ namespace ME3Server_WV
                             SendPacket(player, Blaze.CreatePacket(p.Component, p.Command, 0, 0x1000, p.ID, Result));
                             break;
                         case "ME3_MSG":
-                            lines = File.ReadAllLines(loc + "conf\\ME3MSG.txt");
+                            lines = File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "ME3MSG.txt");
                             List1 = new List<string>();
                             List2 = new List<string>();
                             for (int i = 0; i < lines.Length; i++)
@@ -1694,7 +1694,7 @@ namespace ME3Server_WV
                             SendPacket(player, Blaze.CreatePacket(p.Component, p.Command, 0, 0x1000, p.ID, Result));
                             break;
                         case "ME3_ENT":
-                            lines = File.ReadAllLines(loc + "conf\\ME3ENT.txt");
+                            lines = File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "ME3ENT.txt");
                             List1 = new List<string>();
                             List2 = new List<string>();
                             for (int i = 0; i < lines.Length; i++)
@@ -1714,7 +1714,7 @@ namespace ME3Server_WV
                             List1 = new List<string>();
                             List2 = new List<string>();
                             List1.Add("Config");
-                            List2.Add(File.ReadAllText(loc + "conf\\ME3DIME.txt"));
+                            List2.Add(File.ReadAllText(loc + "conf" + Path.DirectorySeparatorChar + "ME3DIME.txt"));
                             Result.Add(Blaze.TdfDoubleList.Create("CONF", 1, 1, List1, List2, 1));
                             SendPacket(player, Blaze.CreatePacket(p.Component, p.Command, 0, 0x1000, p.ID, Result));
                             break;
@@ -2222,7 +2222,7 @@ namespace ME3Server_WV
             //Add packet to response
             m.Write(buff, 0, buff.Length);
             //Create returnDedicatedServerToPool Packet
-            buff = File.ReadAllBytes(loc + "replay\\04_14_01_res.bin");
+            buff = File.ReadAllBytes(loc + "replay" + Path.DirectorySeparatorChar + "04_14_01_res.bin");
             Blaze.Packet resp = Blaze.ReadBlazePacket(new MemoryStream(buff));
             List<Blaze.Tdf> form = Blaze.ReadPacketContent(resp);
             for (int i = 0; i < form.Count; i++)
@@ -2328,7 +2328,7 @@ namespace ME3Server_WV
             //Add packet to response
             m.Write(buff, 0, buff.Length);
             //Create Player Info Packet
-            buff = File.ReadAllBytes(loc + "replay\\04_14_02_res.bin");
+            buff = File.ReadAllBytes(loc + "replay" + Path.DirectorySeparatorChar + "04_14_02_res.bin");
             resp = Blaze.ReadBlazePacket(new MemoryStream(buff));
             form = Blaze.ReadPacketContent(resp);
             Blaze.TdfStruct DATA = (Blaze.TdfStruct)form[0];
@@ -2397,7 +2397,7 @@ namespace ME3Server_WV
                 byte[] buff = CreateMPPlayerInfo(game, player);
                 res.Write(buff, 0, buff.Length);
                 //Create joinGameByGroup Packet
-                buff = File.ReadAllBytes(loc + "replay\\04_15_res.bin");
+                buff = File.ReadAllBytes(loc + "replay" + Path.DirectorySeparatorChar + "04_15_res.bin");
                 resp = Blaze.ReadBlazePacket(new MemoryStream(buff));
                 form = Blaze.ReadPacketContent(resp);
                 Blaze.TdfInteger GID = (Blaze.TdfInteger)form[0];
@@ -2441,7 +2441,7 @@ namespace ME3Server_WV
             try
             {
                 MemoryStream res = new MemoryStream();
-                byte[] buff = File.ReadAllBytes(loc + "replay\\04_14_03_res.bin");
+                byte[] buff = File.ReadAllBytes(loc + "replay" + Path.DirectorySeparatorChar + "04_14_03_res.bin");
                 Blaze.Packet pform = Blaze.ReadBlazePacket(new MemoryStream(buff));
                 List<Blaze.Tdf> form = Blaze.ReadPacketContent(pform);
                 //Create returnDedicatedServerToPool Packet
@@ -2569,7 +2569,7 @@ namespace ME3Server_WV
                 buff = Blaze.CreatePacket(0x04, 0x14, 0, 0x2000, 0, form);
                 res.Write(buff, 0, buff.Length);
                 //Create PlayerInfo Packet
-                buff = File.ReadAllBytes(loc + "replay\\04_14_02_res.bin");
+                buff = File.ReadAllBytes(loc + "replay" + Path.DirectorySeparatorChar + "04_14_02_res.bin");
                 pform = Blaze.ReadBlazePacket(new MemoryStream(buff));
                 form = Blaze.ReadPacketContent(pform);
                 Blaze.TdfStruct DATA = (Blaze.TdfStruct)form[0];
@@ -2594,7 +2594,7 @@ namespace ME3Server_WV
             try
             {
                 MemoryStream res = new MemoryStream();
-                byte[] buff = File.ReadAllBytes(loc + "replay\\7802_02_01_res.bin");
+                byte[] buff = File.ReadAllBytes(loc + "replay" + Path.DirectorySeparatorChar + "7802_02_01_res.bin");
                 Blaze.Packet pform = Blaze.ReadBlazePacket(new MemoryStream(buff));
                 List<Blaze.Tdf> form = Blaze.ReadPacketContent(pform);
                 Blaze.TdfStruct DATA = (Blaze.TdfStruct)form[0];
@@ -2855,7 +2855,7 @@ namespace ME3Server_WV
             WriteInt(res, buffc.Length);
             WriteInt(res, indata.Length);
             res.Write(buffc, 0, buffc.Length);
-            File.WriteAllBytes(loc + "logs\\test.bin", res.ToArray());
+            File.WriteAllBytes(loc + "logs" + Path.DirectorySeparatorChar + "test.bin", res.ToArray());
             string tlkbase64 = Convert.ToBase64String(res.ToArray());
             int pos = 0;
             int chunkn = 0;
@@ -2946,11 +2946,11 @@ namespace ME3Server_WV
             {
                 return loc + live_bini;
             }
-            else if (File.Exists(loc + "conf\\" + live_bini))
+            else if (File.Exists(loc + "conf" + Path.DirectorySeparatorChar + live_bini))
             {
-                return loc + "conf\\" + live_bini;
+                return loc + "conf" + Path.DirectorySeparatorChar + live_bini;
             }
-            return loc + "conf\\ME3BINI.bin";
+            return loc + "conf" + Path.DirectorySeparatorChar + "ME3BINI.bin";
         }
         public static string GetLiveTLK()
         {
@@ -2959,15 +2959,15 @@ namespace ME3Server_WV
             {
                 return loc + live_tlk;
             }
-            else if (File.Exists(loc + "conf\\" + live_tlk))
+            else if (File.Exists(loc + "conf" + Path.DirectorySeparatorChar + live_tlk))
             {
-                return loc + "conf\\" + live_tlk;
+                return loc + "conf" + Path.DirectorySeparatorChar + live_tlk;
             }
-            return loc + "conf\\ME3TLK.tlk";
+            return loc + "conf" + Path.DirectorySeparatorChar + "ME3TLK.tlk";
         }
         public static string GetLiveTLK(string language)
         {
-            string fileTLK = loc + "conf\\ME3TLK_" + language + ".tlk";
+            string fileTLK = loc + "conf" + Path.DirectorySeparatorChar + "ME3TLK_" + language + ".tlk";
             if (File.Exists(fileTLK))
             {
                 return fileTLK;
@@ -2981,7 +2981,7 @@ namespace ME3Server_WV
         {
             try
             {
-                List<string> files = new List<string>(Directory.GetFiles(loc + "player\\", "*.txt"));
+                List<string> files = new List<string>(Directory.GetFiles(loc + "player" + Path.DirectorySeparatorChar, "*.txt"));
                 // item removal, loop must be backwards...
                 for (int i = (files.Count - 1); i >= 0; i--)
                 {
@@ -3167,7 +3167,7 @@ namespace ME3Server_WV
         private static int[] GaWGetRatings(string filename)
         {
             int[] ratings = { 5000, 5000, 5000, 5000, 5000 };
-            filename = loc + "player\\gaw\\" + filename;
+            filename = loc + "player" + Path.DirectorySeparatorChar + "gaw" + Path.DirectorySeparatorChar + filename;
             try
             {
                 if (!File.Exists(filename)) // if file doesn't exist, create file and return default ratings
@@ -3211,7 +3211,7 @@ namespace ME3Server_WV
             Uri incRatingsUri = new Uri("gaw://" + request);
             string session = Path.GetFileName(incRatingsUri.LocalPath);
             int[] ratings = GaWGetRatings(session + ".txt");
-            if (!File.Exists(loc + "player\\gaw\\" + session + ".txt"))
+            if (!File.Exists(loc + "player" + Path.DirectorySeparatorChar + "gaw" + Path.DirectorySeparatorChar + session + ".txt"))
                 return;
             Player.PlayerInfo targetPlayer = null;
             if (session != "default")
@@ -3227,7 +3227,7 @@ namespace ME3Server_WV
             }
             if (targetPlayer != null)
                 playername = targetPlayer.Name;
-            string gawfile = loc + "player\\gaw\\" + session + ".txt";
+            string gawfile = loc + "player" + Path.DirectorySeparatorChar + "gaw" + Path.DirectorySeparatorChar + session + ".txt";
             try
             {
                 for (int i = 0; i < 5; i++)

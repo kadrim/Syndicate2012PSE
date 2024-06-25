@@ -59,7 +59,7 @@ namespace ME3Server_WV
                 return;
             }
 
-            string playertextfile = Frontend.loc + "player\\" + textBox2.Text + ".txt";
+            string playertextfile = Frontend.loc + "player" + Path.DirectorySeparatorChar + textBox2.Text + ".txt";
             bool overwritten = false;
             if (File.Exists(playertextfile))
             {
@@ -88,7 +88,7 @@ namespace ME3Server_WV
                 return;
             }
 
-            msg = "Done.\n\nFile 'player\\" + textBox2.Text + ".txt' has been " + (overwritten ? "overwritten." : "created.");
+            msg = "Done.\n\nFile 'player" + Path.DirectorySeparatorChar + textBox2.Text + ".txt' has been " + (overwritten ? "overwritten." : "created.");
             msg += "\n\nLogin: " + textBox2.Text + "\nPassword: " + textBox3.Text;
             MessageBox.Show(msg, "Profile creation", MessageBoxButtons.OK, MessageBoxIcon.Information);
             this.Close();
@@ -150,7 +150,7 @@ namespace ME3Server_WV
                 res += "AUTH=" + PlayerID.ToString("X8") + "UoE4gBscrqJNM7j6nR84thRQrPmaqc1TgbPCXc3vTmOf-1jnUBttCGvO-j2M2RG54CP48eNSZHqbHLnGeP8PL4YsPVsqKU9s9CmyKohn9ezWeQ5HhX9u9wVY\r\n";
                 res += "AUTH2=" + Password + "\r\n";
                 res += "DSNM=" + PlayerName;
-                File.WriteAllText(Frontend.loc + "player\\" + PlayerName + ".txt", res);
+                File.WriteAllText(Frontend.loc + "player" + Path.DirectorySeparatorChar + PlayerName + ".txt", res);
                 return true;
             }
             catch (Exception ex)

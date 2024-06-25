@@ -13,7 +13,7 @@ namespace Setup
 {
     public partial class SetupForClient : Form
     {
-        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + "\\";
+        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
         public SetupForClient()
         {
             InitializeComponent();
@@ -22,7 +22,7 @@ namespace Setup
         private void button1_Click(object sender, EventArgs e)
         {
             string IP = textBox1.Text;
-            string[] lines = File.ReadAllLines(loc + "conf\\conf.txt");
+            string[] lines = File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "conf.txt");
             for (int i = 0; i < lines.Length; i++)
             {
                 if (lines[i].Trim().StartsWith("#"))
@@ -33,7 +33,7 @@ namespace Setup
                 if (parts[0].Trim() == "RedirectIP")
                     lines[i] = "RedirectIP=" + IP;
             }
-            File.WriteAllLines(loc + "conf\\conf.txt", lines);
+            File.WriteAllLines(loc + "conf" + Path.DirectorySeparatorChar + "conf.txt", lines);
             ME3Server_WV.Frontend.ActivateRedirection(IP);
             this.Close();
         }

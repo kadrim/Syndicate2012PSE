@@ -11,8 +11,8 @@ namespace ME3Server_WV
 {
     public static class Local_Profile
     {
-        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + "\\";
-        private static byte[] tempprofile = File.ReadAllBytes(loc + "conf\\temp_profile.bin");
+        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
+        private static byte[] tempprofile = File.ReadAllBytes(loc + "conf" + Path.DirectorySeparatorChar + "temp_profile.bin");
         public static byte[] CreateProfile(int ID, string AUTH)
         {
             MemoryStream res = new MemoryStream();

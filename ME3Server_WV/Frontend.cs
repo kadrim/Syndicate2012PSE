@@ -13,8 +13,8 @@ namespace ME3Server_WV
 {
     public partial class Frontend : Form
     {
-        public static string loc = Path.GetDirectoryName(Application.ExecutablePath) + "\\";
-        public static string sysdir = Environment.SystemDirectory + "\\";
+        public static string loc = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
+        public static string sysdir = Environment.SystemDirectory + Path.DirectorySeparatorChar;
         public GUI_Log LogWindow;
         public GUI_Player PlayerWindow;
         public GUI_GameList GameList;
@@ -73,10 +73,10 @@ namespace ME3Server_WV
                 try
                 {
                     string path = Path.GetDirectoryName(d.FileName);
-                    File.Copy(loc + "patch\\binkw32.dll", path + "\\binkw32.dll", true);
-                    File.Copy(loc + "patch\\binkw23.dll", path + "\\binkw23.dll", true);
-                    if (File.Exists(loc + "patch\\MassEffect3.exe"))
-                        File.Copy(loc + "patch\\MassEffect3.exe", path + "\\MassEffect3.exe", true);
+                    File.Copy(loc + "patch" + Path.DirectorySeparatorChar + "binkw32.dll", path + Path.DirectorySeparatorChar + "binkw32.dll", true);
+                    File.Copy(loc + "patch" + Path.DirectorySeparatorChar + "binkw23.dll", path + Path.DirectorySeparatorChar + "binkw23.dll", true);
+                    if (File.Exists(loc + "patch" + Path.DirectorySeparatorChar + "MassEffect3.exe"))
+                        File.Copy(loc + "patch" + Path.DirectorySeparatorChar + "MassEffect3.exe", path + Path.DirectorySeparatorChar + "MassEffect3.exe", true);
                     MessageBox.Show("Done.");
                 }
                 catch (Exception ex)
@@ -96,8 +96,8 @@ namespace ME3Server_WV
             DeactivateRedirection(false);
             try
             {
-                List<string> r = new List<string>(File.ReadAllLines(loc + "conf\\redirect.txt"));
-                List<string> h = new List<string>(File.ReadAllLines(sysdir + @"drivers\etc\hosts"));
+                List<string> r = new List<string>(File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "redirect.txt"));
+                List<string> h = new List<string>(File.ReadAllLines(sysdir + @"drivers" + Path.DirectorySeparatorChar + "etc" + Path.DirectorySeparatorChar + "hosts"));
                 foreach (string url in r)
                 {
                     string s = hostIP + " " + url;
@@ -122,8 +122,8 @@ namespace ME3Server_WV
         {
             try
             {
-                List<string> r = new List<string>(File.ReadAllLines(loc + "conf\\redirect.txt"));
-                List<string> h = new List<string>(File.ReadAllLines(sysdir + @"drivers\etc\hosts"));
+                List<string> r = new List<string>(File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "redirect.txt"));
+                List<string> h = new List<string>(File.ReadAllLines(sysdir + @"drivers" + Path.DirectorySeparatorChar + "etc" + Path.DirectorySeparatorChar + "hosts"));
                 foreach (string url in r)
                 {
                     for (int i = (h.Count - 1); i >= 0; i--)
@@ -151,8 +151,8 @@ namespace ME3Server_WV
             {
 
                 int count = 0;
-                List<string> r = new List<string>(File.ReadAllLines(loc + "conf\\redirect.txt"));
-                List<string> h = new List<string>(File.ReadAllLines(sysdir + @"drivers\etc\hosts"));
+                List<string> r = new List<string>(File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "redirect.txt"));
+                List<string> h = new List<string>(File.ReadAllLines(sysdir + @"drivers" + Path.DirectorySeparatorChar + "etc" + Path.DirectorySeparatorChar + "hosts"));
                 foreach (string url in r)
                 {
                     for (int i = (h.Count - 1); i >= 0; i--)
@@ -217,7 +217,7 @@ namespace ME3Server_WV
 
         private void deleteLogsToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string[] logs = Directory.GetFiles(loc + "logs\\");
+            string[] logs = Directory.GetFiles(loc + "logs" + Path.DirectorySeparatorChar);
             foreach (string log in logs)
                 File.Delete(log);
             MessageBox.Show("Done");

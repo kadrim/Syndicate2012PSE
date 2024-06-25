@@ -19,7 +19,7 @@ namespace Setup
         }
         List<string> IPAdresses;
         public Form1 parent;
-        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + "\\";
+        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
 
         private void SetupForHoster_Load(object sender, EventArgs e)
         {
@@ -48,7 +48,7 @@ namespace Setup
             if (n == -1)
                 return;
             string IP = IPAdresses[n];
-            string[] lines = File.ReadAllLines(loc + "conf\\conf.txt");
+            string[] lines = File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "conf.txt");
             for (int i = 0; i < lines.Length; i++)
             {
                 if (lines[i].Trim().StartsWith("#"))
@@ -59,7 +59,7 @@ namespace Setup
                 if (parts[0].Trim() == "RedirectIP")
                     lines[i] = "RedirectIP=" + IP;
             }
-            File.WriteAllLines(loc + "conf\\conf.txt", lines);
+            File.WriteAllLines(loc + "conf" + Path.DirectorySeparatorChar + "conf.txt", lines);
             ME3Server_WV.Frontend.ActivateRedirection(IP);
             System.Diagnostics.Process.Start("ME3Server_WV.exe","-silentstart");
             parent.Close();

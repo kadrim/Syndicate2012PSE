@@ -10,14 +10,14 @@ namespace ME3Server_WV
 {
     public static class Config
     {
-        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + "\\";
+        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
         private static readonly object _sync = new object();
         public static List<string> Entries;
 
         public static void Load()
         {
-            if (File.Exists(loc + "conf\\conf.txt"))
-                Entries = new List<string>(File.ReadAllLines(loc + "conf\\conf.txt")); 
+            if (File.Exists(loc + "conf" + Path.DirectorySeparatorChar + "conf.txt"))
+                Entries = new List<string>(File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "conf.txt")); 
             else
                 Logger.Log("Configuration loading failed", Color.Red);
         }
@@ -45,7 +45,7 @@ namespace ME3Server_WV
         public static string MainMenuMessage()
         {
             string defaultMessage = "Welcome to ME3 Private Server Emulator";
-            string messagefile = loc + "conf\\MainMenuMessage.txt";
+            string messagefile = loc + "conf" + Path.DirectorySeparatorChar + "MainMenuMessage.txt";
             try
             {
                 string[] lines = File.ReadAllLines(messagefile);
