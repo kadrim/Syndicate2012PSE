@@ -514,9 +514,9 @@ namespace ME3Server_WV
             {
                 string IP = Config.FindEntry("IP");
                 if (IP == "")
-                    RedirectorListener = new TcpListener(IPAddress.Parse("127.0.0.1"), 42127);
+                    RedirectorListener = new TcpListener(IPAddress.Parse("127.0.0.1"), 42130);
                 else
-                    RedirectorListener = new TcpListener(IPAddress.Parse(IP), 42127);
+                    RedirectorListener = new TcpListener(IPAddress.Parse(IP), 42130);
                 RedirectorListener.Start();
                 Logger.Log("[Redirector] Started listening on " + EndpointToString(RedirectorListener.LocalEndpoint), Color.Black);
                 int counter = 0;
