@@ -11,7 +11,7 @@ AutoDeleteLogs=1
 #Change the currently working server-side coalesced here
 LIVE_BINI=ME3BINI.bin
 
-#TLK file is determined by language code sent by the game (ME3TLK_«code».tlk)
+#TLK file is determined by language code sent by the game (ME3TLK_ï¿½codeï¿½.tlk)
 #If the requested language-specific file is missing, then this setting will be used:
 LIVE_TLK=ME3TLK.tlk
 
@@ -31,7 +31,7 @@ OriginUID=0x12345678
 
 #Redirector Packet
 REDIADDR = 0x0
-REDIHOST = 383933-gosprapp396.ea.com
+REDIHOST = 127.0.0.1
 REDIPORT = 0x378B
 REDISECU = 0x0
 REDIXDNS = 0x0
