@@ -1,0 +1,19 @@
+services:
+  xenia-backend:
+    build:
+      context: .
+      dockerfile: Docker/Xenia-WebServices/Dockerfile
+    environment:
+        API_PORT: 36000
+        MONGO_URI: mongodb://xenia-database:27017/
+        SWAGGER_API: false
+    ports:
+      - '36000:36000'
+    volumes:
+      - './Xenia-WebServices/titles:/xenia-web-service/titles'
+    depends_on:
+      - xenia-database
+  xenia-database:
+    image: mongo
+    volumes:
+      - './data/mongo:/data/db'

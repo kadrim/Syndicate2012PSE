@@ -1,0 +1,16 @@
+{
+    "connect": [
+        {
+            "info": "Title Server Remapping for Syndicate 2012",
+            "port": 42124,
+            "mappedTo": 42130
+        }
+    ],
+    "bind": [
+        {
+            "info": "Unused as of now",
+            "port": 1000,
+            "mappedTo": 1000
+        }
+    ]
+}
