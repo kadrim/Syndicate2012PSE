@@ -4,22 +4,83 @@ This is a Fork from the [ME3 Private Server Emulator](https://github.com/Private
 
 It is modified to allow playing the Coop-Missions of the Syndicate 2012 Game from Starbreeze Studios / Electronic Arts
 
-Currently this is a heavy WIP and will only run with the Xbox360 Version of the Game. Also it currently does not allow multiplayer, instead you can
-use it to start the Coop-Missions and play them solo.
+Currently this is a heavy WIP and will only run with the PC or Xbox360 Version of the Game. Also it currently only allows multiplayer for the PC Version, on Xbox360 instead you can use it to start the Coop-Missions and play them solo.
 
 ## YouTube Video of the Server
 
 [![Syndicate 2012 Private Server Emulation in Action](https://img.youtube.com/vi/KVpIbvhUAWY/0.jpg)](https://youtu.be/KVpIbvhUAWY "Syndicate 2012 Private Server Emulation in Action")
 
-## Howto
+## Usage
 
-Coming soon
+### Dependencies
+
+- A legal copy of the game on one of the supported platforms.
+- Windows PC, to host the services
+- [Docker](https://www.docker.com/products/docker-desktop/) installed
+
+Download the [Latest Release](https://github.com/kadrim/Syndicate2012PSE/releases/latest) and extract the contents somewhere on your harddisk.
+
+Edit the following files:
+
+- `docker-compose.yml` | Replace the current value of `CLIENT_HOST` with the IP-Adress of your Windows PC
+- `conf/conf.txt` | Replace the current values of `RedirectIP` and `REDIHOST` with the IP-Adress of your Windows PC
+- `Xenia-WebServices/titles/45410923/servers.json` | Replace the current value of `address` with the IP-Adress of your Windows PC
+
+Then open a terminal in the folder where you extracted the current release and run the following commands:
+
+```
+docker compose build --no-cache
+docker compose up
+```
+
+Afterwards execute the file `ME3Server_WV.exe`. Your private server is now prepared!
+
+### PC Client
+
+For the PC-Client you have 2 choices:
+
+1. Run the Game unmodified
+    - Pro: no need to modify any game files
+    - Con: if you have another game that utilizes the domain `gosredirector.ea.com` you will most likely brick that other game
+2.
+    - Pro: you won't affect other games multiplayer experience
+    - Con: you will have to patch a game file
+
+#### Option 1
+
+Edit your `hosts` file under `%windir%\system32\drivers\etc` and enter your IP Address and set it to `gosredirector.ea.com`
+
+#### Option 2
+
+Edit your `hosts` file under `%windir%\system32\drivers\etc` and enter your IP Address and set it to `gosredirector.local`
+
+Use a Hex-Editor like [HxD](https://en.wikipedia.org/wiki/HxD) to edit the game file `System/Win32_x86_Release/MSystem.dll` and look for the string `gosredirector.ea.com`. Replace it with `gosredirector.local` and add the Hex-Code `00` directly after the string
+
+Edit `docker-compose.yml` again and set the value of `LOCAL_FQDN` to `true`. Stop the current docker containers in the previously opened terminal by hitting `CTRL+C` and then run `docker compose up` again.
+
+#### Playing
+
+- Start the game and select `CO-OP`
+- You will have to enter login credentials. The service comes with 2 premade users `tester` and `tester2`, the password for both is `1234`
+- If you want additional users, simply create new ones in the server using `Tools -> Create Player Profile`
+- Within the game select `Create private game` and start it
+- If another user shall join, he simply has to select `Play quick match` to join the previously created game
+
+### Xbox360 Client
+
+- Dump your original Game-DVD using your Xbox360 to an USB-Device (many Tutorials exist for that).
+- Grab a version of [Xenia Canary Netplay](https://github.com/AdrianCassar/xenia-canary/releases)
+- Start it once and exit right away
+- Edit the file `xenia-canary-netplay.config.toml` and set the value of `api_address` to `api_address = "<YOUR-IP-ADDRESS>:36000/"`, i.e. `api_address = "192.168.1.100:36000/"`
+- Then start xenia again and launch the game
 
 ## Todos
 
-- Fix Coop / Multiplayer
+- Fix Coop / Multiplayer for Xbox360
 - Fix quitting and finishing a Mission (Crash of Emulator)
 - Save Stats of each Player
+- Add support for PS3 Version
+- Enable Cross-Platform play
 
 ## Thanks
 
@@ -28,6 +89,7 @@ Coming soon
 - Zlofenix
 - Bshtornado
 - Balázs
+- [Aim4kill](https://github.com/Aim4kill)
 
 ## Donation
 I developed this project in my free time. If you like it and want to support future updates, feel free to donate here:
