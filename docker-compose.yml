@@ -13,7 +13,18 @@ services:
       - './Xenia-WebServices/titles:/xenia-web-service/titles'
     depends_on:
       - xenia-database
+
   xenia-database:
     image: mongo
     volumes:
       - './data/mongo:/data/db'
+
+  sslv3-proxy:
+    build:
+      context: .
+      dockerfile: Docker/SSLv3Proxy/Dockerfile
+    environment:
+        LOCAL_FQDN: false
+        CLIENT_HOST: 172.17.0.1
+    ports:
+      - '42127:42127'
