@@ -1,0 +1,3 @@
+[submodule "submodules/Xenia-WebServices"]
+	path = submodules/Xenia-WebServices
+	url = https://github.com/AdrianCassar/Xenia-WebServices
