@@ -1,5 +1,5 @@
 #Main Settings
-IP=127.0.0.1
+IP=0.0.0.0
 RedirectIP=127.0.0.1
 TargetIP  =92.52.77.245
 LogLevel  =0
@@ -11,7 +11,7 @@ AutoDeleteLogs=1
 #Change the currently working server-side coalesced here
 LIVE_BINI=ME3BINI.bin
 
-#TLK file is determined by language code sent by the game (ME3TLK_�code�.tlk)
+#TLK file is determined by language code sent by the game (ME3TLK_ code .tlk)
 #If the requested language-specific file is missing, then this setting will be used:
 LIVE_TLK=ME3TLK.tlk
 
