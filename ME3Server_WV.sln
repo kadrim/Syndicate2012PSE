@@ -7,8 +7,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PacketViewer", "PacketViewe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "zlib.net", "zlib\zlib.net.csproj", "{0C89B7A2-A218-49E4-B545-5B044A45F977}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Setup", "Setup\Setup.csproj", "{30A4F964-9B74-4421-B72B-221A18FBACE9}"
-EndProject
 Project("{F184B08F-C81C-45F6-A57F-5ABD9991F28F}") = "ME3PlayerDataEditor", "ME3PlayerDataEditor\ME3PlayerDataEditor.vbproj", "{1471FF11-4703-467A-8F63-9B01FE6B2CE3}"
 EndProject
 Global
