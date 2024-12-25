@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Express 2012 for Windows Desktop
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ME3Server_WV", "ME3Server_WV\ME3Server_WV.csproj", "{9D06055F-6D7F-4B99-8E20-92D82C3F5715}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Syndicate2012Server", "ME3Server_WV\ME3Server_WV.csproj", "{9D06055F-6D7F-4B99-8E20-92D82C3F5715}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PacketViewer", "PacketViewer\PacketViewer.csproj", "{AC224501-7783-47ED-92F1-065CB19E16F8}"
 EndProject
