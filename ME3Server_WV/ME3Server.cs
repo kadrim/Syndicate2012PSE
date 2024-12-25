@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
@@ -43,7 +43,6 @@ namespace ME3Server_WV
             Config.Load();
             Logger.DeleteLogs();
             LoadInitialConfig();
-            PerformSSL3Checks();
             tTick = new Thread(threadTickListener);
             tTick.Start();
             Application.DoEvents();
