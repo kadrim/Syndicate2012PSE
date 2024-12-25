@@ -29,11 +29,11 @@ Edit the following files:
 Then open a terminal in the folder where you extracted the current release and run the following commands:
 
 ```
-docker compose build --no-cache
+docker compose build
 docker compose up
 ```
 
-Afterwards execute the file `ME3Server_WV.exe`. Your private server is now prepared!
+Afterwards execute the file `Syndicate2012Server.exe`. Your private server is now prepared!
 
 ### PC Client
 
