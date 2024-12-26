@@ -90,7 +90,7 @@ Then open the file `player/player1.txt` and replace `UID` and `PID` with the Hex
 ### Xbox360 Client
 
 - Dump your original Game-DVD using your Xbox360 to an USB-Device (many Tutorials exist for that).
-- Grab a version of [Xenia Canary Netplay](https://github.com/AdrianCassar/xenia-canary/releases)
+- Grab a release (i.e. v3.0.0) of [Xenia Canary Netplay](https://github.com/AdrianCassar/xenia-canary/releases)
 - Start it once and exit right away
 - Edit the file `xenia-canary-netplay.config.toml` and set the value of `api_address` to `api_address = "<YOUR-IP-ADDRESS>:36000/"`, i.e. `api_address = "192.168.1.100:36000/"`
 - Then start xenia again and launch the game
