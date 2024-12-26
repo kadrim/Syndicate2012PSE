@@ -43,7 +43,7 @@ namespace ME3Server_WV
         private void Frontend_Load(object sender, EventArgs e)
         {
             string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            this.Text = "ME3 Private Server Emulator by Warranty Voider, build: " + version;
+            this.Text = "Syndicate 2012 Private Server Emulator by Kadrim, build: " + version;
             LogWindow = new GUI_Log();
             PlayerWindow = new GUI_Player();
             GameList = new GUI_GameList();
