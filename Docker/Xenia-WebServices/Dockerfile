@@ -1,12 +1,16 @@
 FROM node:20-alpine
 
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
 WORKDIR /xenia-web-service
 
-COPY submodules/Xenia-WebServices/package*.json ./
+COPY submodules/Xenia-WebServices/. .
+
+RUN chown -R appuser:appgroup .
+
+USER appuser
 
 RUN npm install
-
-COPY submodules/Xenia-WebServices/. .
 
 RUN npm run build
 

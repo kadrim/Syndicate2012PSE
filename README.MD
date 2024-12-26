@@ -29,7 +29,7 @@ Edit the following files:
 Then open a terminal in the folder where you extracted the current release and run the following commands:
 
 ```
-docker compose build
+docker compose build --no-cache
 docker compose up
 ```
 

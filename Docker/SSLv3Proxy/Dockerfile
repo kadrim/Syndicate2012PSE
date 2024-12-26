@@ -1,8 +1,12 @@
-FROM ubuntu:trusty
-
-WORKDIR /sslv3-proxy
+FROM ubuntu:14.04
 
 RUN apt-get update && apt-get install -y nodejs && apt-get clean
+
+RUN useradd -ms /bin/bash appuser
+
+USER appuser
+
+WORKDIR /sslv3-proxy
 
 COPY SSLv3Proxy/. .
 
