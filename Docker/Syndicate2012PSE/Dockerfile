@@ -1,0 +1,25 @@
+FROM ubuntu:20.04
+
+RUN dpkg --add-architecture i386 && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y wine32 winetricks xvfb && apt-get clean
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y net-tools && apt-get clean
+
+RUN useradd -ms /bin/bash appuser
+
+WORKDIR /syndicate2012-pse
+
+RUN chown -R appuser:appuser .
+
+USER appuser
+
+RUN winetricks -q dotnet452
+
+COPY Docker/Syndicate2012PSE/startup.sh .
+
+COPY ME3Server_WV/bin/Debug/ ./
+
+ENV HEADLESS=true
+
+EXPOSE 14219 42130
+
+CMD [ "./startup.sh" ]
