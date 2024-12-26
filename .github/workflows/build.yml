@@ -42,3 +42,9 @@ jobs:
     
     - name: List Build Directory
       run: dir ME3Server_WV\bin\Release\
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: release-build-${{ github.sha }}
+        path: ME3Server_WV/bin/Release/
+        retention-days: 1
