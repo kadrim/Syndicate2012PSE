@@ -245,9 +245,9 @@ namespace ME3Server_WV
             {
                 string IP = Config.FindEntry("IP");
                 if (IP == "")
-                    HttpListener = new TcpListener(IPAddress.Parse("127.0.0.1"), 80);
+                    HttpListener = new TcpListener(IPAddress.Parse("127.0.0.1"), 8088);
                 else
-                    HttpListener = new TcpListener(IPAddress.Parse(IP), 80);
+                    HttpListener = new TcpListener(IPAddress.Parse(IP), 8088);
                 HttpListener.Start();
                 Logger.Log("[Http Listener] Started listening on " + EndpointToString(HttpListener.LocalEndpoint), Color.Black);
                 int counter = 0;

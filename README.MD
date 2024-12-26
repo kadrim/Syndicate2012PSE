@@ -68,6 +68,8 @@ Edit `docker-compose.yml` again and set the value of `LOCAL_FQDN` to `true`. Sto
 
 #### Known Issues
 
+For help visit the official [Discord-Channel](https://discord.gg/6SmVQy8T)
+
 ##### Timeout on Server and In-Game
 
 If you see the In-Game message `The request timed out. You are being returned to the main menu.` and also in the Server-Log the message: `[Main Server Handler #] Player Timed Out`, this is most likely due to an existing silentLogin in your game-client.
@@ -92,6 +94,19 @@ Then open the file `player/tester.txt` and replace `UID` and `PID` with the Hex-
 - Start it once and exit right away
 - Edit the file `xenia-canary-netplay.config.toml` and set the value of `api_address` to `api_address = "<YOUR-IP-ADDRESS>:36000/"`, i.e. `api_address = "192.168.1.100:36000/"`
 - Then start xenia again and launch the game
+
+### Linux Support
+
+The game itself runs pretty decent on `SteamOS` and `Ubuntu` using [Steam](https://store.steampowered.com/about/) (add Syndicate as a non-steam game) and by turning on the compatibility using `Proton` (i.e. Proton 9.0-4).
+
+To use the Server on a Linux machine you simply have to copy the file `linux/compose.override.yaml` to the root directory of this project (so one directory up). If you are running this on a desktop with GUI you can enable the GUI by editing the copied file and setting `HEADLESS` to `false`.
+
+Afterwards rebuild and rerun the services by executing:
+
+```
+docker compose build
+docker compose up
+```
 
 ## Todos
 
