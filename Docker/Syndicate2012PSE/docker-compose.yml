@@ -2,7 +2,7 @@ services:
   syndicate2012-pse:
     build:
       context: ../..
-      dockerfile: Docker/Syndicate2012PSE/Dockerfile
+      dockerfile: Docker/Syndicate2012PSE/Dockerfile.debug
     environment:
         HEADLESS: true
         DISPLAY: $DISPLAY

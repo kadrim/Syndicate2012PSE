@@ -18,7 +18,7 @@ COPY --chown=appuser Docker/Syndicate2012PSE/startup.sh .
 
 RUN chmod +x startup.sh
 
-COPY --chown=appuser ./ ./
+COPY --chown=appuser ME3Server_WV/bin/Debug/ ./
 
 ENV HEADLESS=true
 

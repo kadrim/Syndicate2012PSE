@@ -1,0 +1,20 @@
+services:
+  syndicate2012-pse:
+    build:
+      context: .
+      dockerfile: Docker/Syndicate2012PSE/Dockerfile
+    environment:
+        HEADLESS: true
+        DISPLAY: $DISPLAY
+        WAYLAND_DISPLAY: $WAYLAND_DISPLAY
+        XDG_RUNTIME_DIR: $XDG_RUNTIME_DIR
+    network_mode: host
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - './cert:/syndicate2012-pse/cert'
+      - './conf:/syndicate2012-pse/conf'
+      - './http:/syndicate2012-pse/http'
+      - './logs:/syndicate2012-pse/logs'
+      - './patch:/syndicate2012-pse/patch'
+      - './player:/syndicate2012-pse/player'
+      - './replay:/syndicate2012-pse/replay'
