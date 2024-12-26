@@ -61,7 +61,7 @@ Edit `docker-compose.yml` again and set the value of `LOCAL_FQDN` to `true`. Sto
 #### Playing
 
 - Start the game and select `CO-OP`
-- You will have to enter login credentials. The service comes with 2 premade users `tester` and `tester2`, the password for both is `1234`
+- You will have to enter login credentials. The service comes with `4` premade users `player1`, `player2`, `player3` and `player4`, the password for all is `1234`
 - If you want additional users, simply create new ones in the server using `Tools -> Create Player Profile`
 - Within the game select `Create private game` and start it
 - If another user shall join, he simply has to select `Play quick match` to join the previously created game
@@ -85,7 +85,7 @@ To fix this, first open the file `logs/MainServerLog.txt` and look for something
 
 Within the quotes is the `AUTH` Token and in the line below is the Hex-Value for the `PID`. Take a note of both values.
 
-Then open the file `player/tester.txt` and replace `UID` and `PID` with the Hex-Value from your logfile. Also replace the `AUTH` value with the one from your log. Save the file and reconnect your game-client, everything should work now.
+Then open the file `player/player1.txt` and replace `UID` and `PID` with the Hex-Value from your logfile. Also replace the `AUTH` value with the one from your log. Save the file and reconnect your game-client, everything should work now.
 
 ### Xbox360 Client
 
