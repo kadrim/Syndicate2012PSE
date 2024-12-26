@@ -3,3 +3,7 @@
 # except .gitignore and gaw
 !gaw/
 !.gitignore
+!player1.txt
+!player2.txt
+!player3.txt
+!player4.txt
