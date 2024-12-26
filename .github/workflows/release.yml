@@ -1,0 +1,59 @@
+name: Draft Release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  release:
+    runs-on: windows-2019
+
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+    
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v1
+
+    - uses: nuget/setup-nuget@v1
+      with:
+        nuget-api-key: ${{ secrets.NuGetAPIKey }}
+        nuget-version: '5.x'
+      
+    - name: Navigate to Workspace
+      run: cd $GITHUB_WORKSPACE
+
+    - name: Restore Packages
+      run: nuget restore ME3Server_WV.sln
+
+    - name: Build Solution
+      run: |
+        msbuild.exe ME3Server_WV.sln /nologo /nr:false /p:DeleteExistingFiles=True /p:platform="Any CPU" /p:configuration="Release"
+
+    - name: Create Release-ZIP
+      run: |
+        mkdir Release-Syndicate2012PSE_${{ github.ref_name }}
+        mkdir Release-Syndicate2012PSE_${{ github.ref_name }}\logs
+        xcopy ME3Server_WV\bin\Debug Release-Syndicate2012PSE_${{ github.ref_name }} /s /e
+        xcopy ME3Server_WV\bin\Release Release-Syndicate2012PSE_${{ github.ref_name }} /s /e /y
+        xcopy Docker Release-Syndicate2012PSE_${{ github.ref_name }}\Docker /s /e /i
+        xcopy linux Release-Syndicate2012PSE_${{ github.ref_name }}\linux /s /e /i
+        xcopy SSLv3Proxy Release-Syndicate2012PSE_${{ github.ref_name }}\SSLv3Proxy /s /e /i
+        xcopy submodules Release-Syndicate2012PSE_${{ github.ref_name }}\submodules /s /e /i
+        xcopy Xenia-WebServices Release-Syndicate2012PSE_${{ github.ref_name }}\Xenia-WebServices /s /e /i
+        xcopy docker-compose.yml Release-Syndicate2012PSE_${{ github.ref_name }}
+        xcopy README.MD Release-Syndicate2012PSE_${{ github.ref_name }}
+        del Release-Syndicate2012PSE_${{ github.ref_name }}\*.pdb
+        Compress-Archive -Path Release-Syndicate2012PSE_${{ github.ref_name }} -Destination Release-Syndicate2012PSE_${{ github.ref_name }}.zip
+
+    - name: Draft Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        draft: true
+        files: Release-Syndicate2012PSE_${{ github.ref_name }}.zip
