@@ -15,9 +15,9 @@ services:
       - xenia-database
 
   xenia-database:
-    image: mongo
+    image: mongo:8
     volumes:
-      - './data/mongo:/data/db'
+      - 'mongodb-data:/data/db'
 
   sslv3-proxy:
     build:
@@ -28,3 +28,7 @@ services:
         CLIENT_HOST: 172.17.0.1
     ports:
       - '42127:42127'
+
+volumes:
+  mongodb-data:
+
