@@ -101,7 +101,7 @@ Then open the file `player/player1.txt` and replace `UID` and `PID` with the Hex
 
 The game itself runs pretty decent on `SteamOS` and `Ubuntu` using [Steam](https://store.steampowered.com/about/) (add Syndicate as a non-steam game) and by turning on the compatibility using `Proton` (i.e. Proton 9.0-4).
 
-To use the Server on a Linux machine you simply have to copy the file `linux/compose.override.yaml` to the root directory of this project (so one directory up). If you are running this on a desktop with GUI you can enable the GUI by editing the copied file and setting `HEADLESS` to `false`.
+To use the Server on a Linux machine you simply have to copy the file `Linux/compose.override.yaml` to the root directory of this project (so one directory up). If you are running this on a desktop with GUI you can enable the GUI by editing the copied file and setting `HEADLESS` to `false`.
 
 Afterwards rebuild and rerun the services by executing:
 

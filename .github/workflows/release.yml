@@ -48,7 +48,7 @@ jobs:
         xcopy ME3Server_WV\bin\Debug Release-Syndicate2012PSE_${{ github.ref_name }} /s /e
         xcopy ME3Server_WV\bin\Release Release-Syndicate2012PSE_${{ github.ref_name }} /s /e /y
         xcopy Docker Release-Syndicate2012PSE_${{ github.ref_name }}\Docker /s /e /i
-        xcopy linux Release-Syndicate2012PSE_${{ github.ref_name }}\linux /s /e /i
+        xcopy Linux Release-Syndicate2012PSE_${{ github.ref_name }}\Linux /s /e /i
         xcopy SSLv3Proxy Release-Syndicate2012PSE_${{ github.ref_name }}\SSLv3Proxy /s /e /i
         xcopy submodules Release-Syndicate2012PSE_${{ github.ref_name }}\submodules /s /e /i
         xcopy Xenia-WebServices Release-Syndicate2012PSE_${{ github.ref_name }}\Xenia-WebServices /s /e /i
