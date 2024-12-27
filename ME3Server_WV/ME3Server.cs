@@ -936,6 +936,13 @@ namespace ME3Server_WV
                         if (found)
                             break;
                     }
+
+                    if(!found)
+                    {
+                        Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:32] Error: HandleComponent_1_Command_32: Player for AUTH not found! ", Color.Orange);
+                        SendLoginErrorPacket(player, p, LoginErrorCode.WRONGPASSWORD);
+                        return;
+                    }
                     player.Update = true;
                 }
             }
