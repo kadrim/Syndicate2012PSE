@@ -2,7 +2,7 @@ FROM ubuntu:20.04
 
 RUN dpkg --add-architecture i386 && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y wine32 winetricks xvfb && apt-get clean
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y net-tools && apt-get clean
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y net-tools dos2unix && apt-get clean
 
 RUN useradd -ms /bin/bash appuser
 
@@ -16,7 +16,7 @@ RUN winetricks -q dotnet452
 
 COPY --chown=appuser Docker/Syndicate2012PSE/startup.sh .
 
-RUN chmod +x startup.sh
+RUN dos2unix startup.sh && chmod +x startup.sh
 
 COPY --chown=appuser ./ ./
 
