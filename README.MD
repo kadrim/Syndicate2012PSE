@@ -72,23 +72,6 @@ Edit `docker-compose.yml` again and set the value of `LOCAL_FQDN` to `true`. Sto
 
 For help visit the official [Discord-Channel](https://discord.gg/6SmVQy8T)
 
-##### Timeout on Server and In-Game
-
-If you see the In-Game message `The request timed out. You are being returned to the main menu.` and also in the Server-Log the message: `[Main Server Handler #] Player Timed Out`, this is most likely due to an existing silentLogin in your game-client.
-
-To fix this, first open the file `logs/MainServerLog.txt` and look for something similar to this:
-
-```
-2024.12.24 13:24:41 [<-][INFO] Authentication Component : silentLogin
-2024.12.24 13:24:41 [<-][INFO]  AUTH : 1 "2E9FCF8EUoE4gBscrqJNM7j6nR84thRQrPmaqc1TgbPCXc3vTmOf-1jnUBttCGvO-j2M2RG54CP48eNSZHqbHLnGeP8PL4YsPVsqKU9s9CmyKohn9ezWeQ5HhX9u9wVY"
-2024.12.24 13:24:41 [<-][INFO]  PID  : 0 0x2E9FCF8E
-2024.12.24 13:24:41 [<-][INFO]  TYPE : 0 0x2
-```
-
-Within the quotes is the `AUTH` Token and in the line below is the Hex-Value for the `PID`. Take a note of both values.
-
-Then open the file `player/player1.txt` and replace `UID` and `PID` with the Hex-Value from your logfile. Also replace the `AUTH` value with the one from your log. Save the file and reconnect your game-client, everything should work now.
-
 ### Xbox360 Client
 
 - Dump your original Game-DVD using your Xbox360 to an USB-Device (many Tutorials exist for that).
