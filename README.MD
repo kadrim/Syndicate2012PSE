@@ -33,7 +33,9 @@ docker compose build
 docker compose up
 ```
 
-Afterwards execute the file `Syndicate2012Server.exe`. Your private server is now prepared!
+Afterwards execute the file `Syndicate2012Server.exe`. Your private server is now prepared! Other Players can connect to your server, they only have to do the steps for the corresponding client, mentioned below.
+
+> Note: After a reboot you only have to execute the step `docker compose up` and execute `Syndicate2012Server.exe`. The `docker compose build` step is only needed when you downloaded a new release.
 
 ### PC Client
 
@@ -66,7 +68,7 @@ Edit `docker-compose.yml` again and set the value of `LOCAL_FQDN` to `true`. Sto
 - Within the game select `Create private game` and start it
 - If another user shall join, he simply has to select `Play quick match` to join the previously created game
 
-#### Known Issues
+#### Troubleshooting
 
 For help visit the official [Discord-Channel](https://discord.gg/6SmVQy8T)
 
