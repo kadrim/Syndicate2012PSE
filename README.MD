@@ -82,7 +82,7 @@ For help visit the official [Discord-Channel](https://discord.gg/6SmVQy8T)
 
 ### Linux Support
 
-The game itself runs pretty decent on `SteamOS` and `Ubuntu` using [Steam](https://store.steampowered.com/about/) (add Syndicate as a non-steam game) and by turning on the compatibility using `Proton` (i.e. Proton 9.0-4).
+The game itself runs pretty decent on `SteamOS` and `Ubuntu` using [Steam](https://store.steampowered.com/about/) (add Syndicate as a non-steam game) and by turning on the compatibility using `Proton` (i.e. `Proton 9.0-4`, best results so far with `GE-Proton7-43`).
 
 To use the Server on a Linux machine you simply have to copy the file `Linux/compose.override.yaml` to the root directory of this project (so one directory up). If you are running this on a desktop with GUI you can enable the GUI by editing the copied file and setting `HEADLESS` to `false`.
 
