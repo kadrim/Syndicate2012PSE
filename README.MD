@@ -33,7 +33,9 @@ docker compose build
 docker compose up
 ```
 
-Afterwards execute the file `Syndicate2012Server.exe`. Your private server is now prepared!
+Afterwards execute the file `Syndicate2012Server.exe`. Your private server is now prepared! Other Players can connect to your server, they only have to do the steps for the corresponding client, mentioned below.
+
+> Note: After a reboot you only have to execute the step `docker compose up` and execute `Syndicate2012Server.exe`. The `docker compose build` step is only needed when you downloaded a new release.
 
 ### PC Client
 
@@ -66,7 +68,7 @@ Edit `docker-compose.yml` again and set the value of `LOCAL_FQDN` to `true`. Sto
 - Within the game select `Create private game` and start it
 - If another user shall join, he simply has to select `Play quick match` to join the previously created game
 
-#### Known Issues
+#### Troubleshooting
 
 For help visit the official [Discord-Channel](https://discord.gg/6SmVQy8T)
 
@@ -99,7 +101,7 @@ Then open the file `player/player1.txt` and replace `UID` and `PID` with the Hex
 
 The game itself runs pretty decent on `SteamOS` and `Ubuntu` using [Steam](https://store.steampowered.com/about/) (add Syndicate as a non-steam game) and by turning on the compatibility using `Proton` (i.e. Proton 9.0-4).
 
-To use the Server on a Linux machine you simply have to copy the file `linux/compose.override.yaml` to the root directory of this project (so one directory up). If you are running this on a desktop with GUI you can enable the GUI by editing the copied file and setting `HEADLESS` to `false`.
+To use the Server on a Linux machine you simply have to copy the file `Linux/compose.override.yaml` to the root directory of this project (so one directory up). If you are running this on a desktop with GUI you can enable the GUI by editing the copied file and setting `HEADLESS` to `false`.
 
 Afterwards rebuild and rerun the services by executing:
 
