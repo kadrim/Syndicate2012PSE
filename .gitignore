@@ -3,5 +3,4 @@
 *.suo
 Thumbs.db
 ME3Server_WV/bin/Debug/logs/
-/data/
 /compose.override.yaml
