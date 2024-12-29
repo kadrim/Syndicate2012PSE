@@ -2,17 +2,15 @@
 using System.IO;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
-using System.Web;
+using Microsoft.AspNetCore.WebUtilities;
 using ZLibNet;
 namespace ME3Server_WV
 {
@@ -99,27 +97,22 @@ namespace ME3Server_WV
             if (tRedirector != null && tRedirector.IsAlive)
             {
                 RedirectorListener.Stop();
-                tRedirector.Abort();
             }
             if (tMainServer != null && tMainServer.IsAlive)
             {
                 MainServerListener.Stop();
-                tMainServer.Abort();
             }
             if (tTelemetry != null && tTelemetry.IsAlive)
             {
                 TelemetryListener.Stop();
-                tTelemetry.Abort();
             }
             if (tHttp != null && tHttp.IsAlive)
             {
                 HttpListener.Stop();
-                tHttp.Abort();
             }
             if (tTick != null && tTick.IsAlive)
             {
                 TickListener.Stop();
-                tTick.Abort();
             }
             if (!Config.GetBoolean("AlwaysSkipHostsCheck") && !silentExit && Frontend.IsRedirectionActive())
             {
@@ -152,7 +145,7 @@ namespace ME3Server_WV
                 TelemetryListener.Start();
                 Logger.Log("[Telemetry Listener] Started listening on " + EndpointToString(TelemetryListener.LocalEndpoint), Color.Black);
                 int counter = 0;
-                while (true)
+                while (!exitnow)
                 {
                     TcpClient tcpClient = TelemetryListener.AcceptTcpClient();
                     Logger.Log("[Telemetry Listener] New client connected", Color.DarkGreen);
@@ -178,7 +171,7 @@ namespace ME3Server_WV
             try
             {
                 int counter = 0;
-                while (true && !exitnow)
+                while (!exitnow)
                 {
                     byte[] buff = ReadContent(clientStream);
                     if (buff.Length != 0)
@@ -250,7 +243,7 @@ namespace ME3Server_WV
                 HttpListener.Start();
                 Logger.Log("[Http Listener] Started listening on " + EndpointToString(HttpListener.LocalEndpoint), Color.Black);
                 int counter = 0;
-                while (true && !exitnow)
+                while (!exitnow)
                 {
                     TcpClient tcpClient = HttpListener.AcceptTcpClient();
                     Thread tHttp = new Thread(threadHttpHandler);
@@ -272,7 +265,7 @@ namespace ME3Server_WV
             NetworkStream clientStream = h.stream;
             try
             {
-                while (true && !exitnow)
+                while (!exitnow)
                 {
                     byte[] buff = ReadContentHttp(clientStream);
                     if (buff.Length != 0)
@@ -407,7 +400,7 @@ namespace ME3Server_WV
                 TickListener.Start();
                 Logger.Log("[Tick Listener] Started listening on " + EndpointToString(TickListener.LocalEndpoint), Color.Black);
                 int counter = 0;
-                while (true)
+                while (!exitnow)
                 {
                     TcpClient tcpClient = TickListener.AcceptTcpClient();
                     Logger.Log("[Tick Listener] New client connected", Color.DarkGreen);
@@ -432,7 +425,7 @@ namespace ME3Server_WV
             try
             {
                 int counter = 0;
-                while (true && !exitnow)
+                while (!exitnow)
                 {
                     int byteread = 0;
                     MemoryStream m = new MemoryStream();
@@ -476,12 +469,10 @@ namespace ME3Server_WV
                 RedirectorListener.Start();
                 Logger.Log("[Redirector] Started listening on " + EndpointToString(RedirectorListener.LocalEndpoint), Color.Black);
                 int counter = 0;
-                while (true)
+                while (!exitnow)
                 {
                     TcpClient tcpClient = RedirectorListener.AcceptTcpClient();
                     Logger.Log("[Redirector] New client connected", Color.DarkGreen);
-                    //SslStream clientStream = new SslStream(tcpClient.GetStream(), true);
-                    //clientStream.AuthenticateAsServer(RedirectorCert, false, SslProtocols.Ssl3 | SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, false);
                     Thread tHandler = new Thread(threadRedirectorClientHandler);
                     RedirectorHandlerStruct h = new RedirectorHandlerStruct();
                     h.stream = tcpClient.GetStream();
@@ -559,7 +550,7 @@ namespace ME3Server_WV
                 MainServerListener.Start();
                 Logger.Log("[Main Server] Started listening on " + EndpointToString(MainServerListener.LocalEndpoint), Color.Black);
                 int counter = 0;
-                while (true)
+                while (!exitnow)
                 {
                     TcpClient tcpClient = MainServerListener.AcceptTcpClient();
                     Logger.Log("[Main Server] New client connected", Color.DarkGreen);
@@ -3060,7 +3051,7 @@ namespace ME3Server_WV
             string auth1 = "playernotfound";
             string strSession = "default";
             Uri authUri = new Uri("gaw://" + request);
-            long pID = ConvertHex(HttpUtility.ParseQueryString(authUri.Query).Get("auth"));
+            long pID = ConvertHex(QueryHelpers.ParseQuery(authUri.Query).GetValueOrDefault("auth"));
             Player.PlayerInfo targetPlayer = null;
             foreach (Player.PlayerInfo pl in Player.AllPlayers)
             {
@@ -3237,7 +3228,7 @@ namespace ME3Server_WV
                 for (int i = 0; i < 5; i++)
                 {
                     string rinc = "rinc|" + i;
-                    int increaseValue = Convert.ToInt32(HttpUtility.ParseQueryString(incRatingsUri.Query).Get(rinc));
+                    int increaseValue = Convert.ToInt32(QueryHelpers.ParseQuery(incRatingsUri.Query).GetValueOrDefault(rinc));
                     ratings[i] += increaseValue;
                     if (ratings[i] > 10099)
                         ratings[i] = 10099;
