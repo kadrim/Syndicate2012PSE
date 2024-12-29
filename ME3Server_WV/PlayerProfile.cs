@@ -539,17 +539,6 @@ namespace ME3Server_WV
 
     public class ME3PlayerCharPower
     {
-        private string field1_Name;
-        private int field2_ClassID;
-        private float field3_Rank;
-        private byte field4_Rank4a;
-        private byte field5_Rank4b;
-        private byte field6_Rank5a;
-        private byte field7_Rank5b;
-        private byte field8_Rank6a;
-        private byte field9_Rank6b;
-        private byte field10_HotKey;
-        private bool field11_UsesTalentPoints;
     }
 
     public class ME3PlayerHeader
