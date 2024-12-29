@@ -435,7 +435,7 @@ namespace ME3Server_WV
         public static void WriteString(string str, Stream s)
         {
             int len;
-            if(str.EndsWith("\0"))
+            if(str.EndsWith('\0'))
                 len = (int)str.Length;
             else
                 len = (int)str.Length + 1;
