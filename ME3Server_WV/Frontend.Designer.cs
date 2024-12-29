@@ -51,7 +51,6 @@
             this.packetEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.localProfileCreatorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.deleteLogsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.playerDataEditorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.logLevelToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.level0MostCriticalToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.level3ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -167,8 +166,7 @@
             this.hostsFileToolStripMenuItem1,
             this.packetEditorToolStripMenuItem,
             this.localProfileCreatorToolStripMenuItem,
-            this.deleteLogsToolStripMenuItem,
-            this.playerDataEditorToolStripMenuItem});
+            this.deleteLogsToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(46, 20);
             this.toolsToolStripMenuItem.Text = "Tools";
@@ -235,13 +233,6 @@
             this.deleteLogsToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
             this.deleteLogsToolStripMenuItem.Text = "Delete Logs";
             this.deleteLogsToolStripMenuItem.Click += new System.EventHandler(this.deleteLogsToolStripMenuItem_Click);
-            // 
-            // playerDataEditorToolStripMenuItem
-            // 
-            this.playerDataEditorToolStripMenuItem.Name = "playerDataEditorToolStripMenuItem";
-            this.playerDataEditorToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
-            this.playerDataEditorToolStripMenuItem.Text = "Player Data Editor";
-            this.playerDataEditorToolStripMenuItem.Click += new System.EventHandler(this.playerDataEditorToolStripMenuItem_Click);
             // 
             // logLevelToolStripMenuItem
             // 
@@ -315,7 +306,6 @@
         private System.Windows.Forms.ToolStripMenuItem level0MostCriticalToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem level3ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem level5EverythingToolStripMenuItem;
-        private System.Windows.Forms.ToolStripMenuItem playerDataEditorToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem mITMToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem activateToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripMenuItem1;

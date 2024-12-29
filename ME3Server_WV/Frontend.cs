@@ -303,12 +303,6 @@ namespace ME3Server_WV
             }
         }
 
-        private void playerDataEditorToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            Environment.CurrentDirectory = loc;
-            System.Diagnostics.Process.Start("ME3PlayerDataEditor.exe");
-        }
-
         private void restartToolStripMenuItem_Click(object sender, EventArgs e)
         {
             Application.Restart();
