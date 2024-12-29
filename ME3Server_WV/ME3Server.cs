@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.IO.Compression;
 using System.Collections.Generic;
 using System.Linq;
 using System.Drawing;
@@ -11,7 +12,6 @@ using System.Threading;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using Microsoft.AspNetCore.WebUtilities;
-using ZLibNet;
 namespace ME3Server_WV
 {
     public static class ME3Server
@@ -2837,7 +2837,7 @@ namespace ME3Server_WV
             byte[] indata = File.ReadAllBytes(path);
             MemoryStream zipout = new MemoryStream();
             MemoryStream res = new MemoryStream();
-            ZLibStream outstream = new ZLibStream(zipout, CompressionMode.Compress, CompressionLevel.Level6);
+            ZLibStream outstream = new ZLibStream(zipout, CompressionLevel.Optimal);
             outstream.Write(indata, 0, indata.Length);
             outstream.Flush();
             outstream.Close();

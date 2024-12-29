@@ -1,6 +1,6 @@
 ﻿using System.IO;
+using System.IO.Compression;
 using System.Windows.Forms;
-using ComponentAce.Compression.Libs.zlib;
 using System.Security.Cryptography;
 
 namespace ME3Server_WV
@@ -23,9 +23,9 @@ namespace ME3Server_WV
             for (int i = 0; i < 0x6C; i++)
                 tmp[0xF5 + i] = (byte)AUTH[i];
             MemoryStream zipout = new MemoryStream();
-            ZOutputStream outstream = new ZOutputStream(zipout, -1);
+            ZLibStream outstream = new ZLibStream(zipout, CompressionLevel.Optimal);
             outstream.Write(tmp, 0, tmp.Length);
-            outstream.finish();
+            outstream.Flush();
             outstream.Close();
             byte[] fileres = zipout.ToArray();
             int len = tmp.Length;
