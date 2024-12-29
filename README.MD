@@ -96,7 +96,7 @@ docker compose up
 ## Todos
 
 - Fix Coop / Multiplayer for Xbox360
-- Fix quitting and finishing a Mission (Crash of Emulator)
+- Fix quitting and finishing a Mission (Crash of Game-Client)
 - Save Stats of each Player
 - Add support for PS3 Version
 - Enable Cross-Platform play
