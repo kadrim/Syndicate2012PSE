@@ -1,7 +1,7 @@
 PLAYER_FILES.txt
-DESC_INV.TXT
-DESC_REWARDS.TXT
-*.exe
-*.exe.config
-*.pdb
-*.dll
+/*.exe
+/*.exe.config
+/*.pdb
+/*.dll
+/*.dll.config
+/*.json
