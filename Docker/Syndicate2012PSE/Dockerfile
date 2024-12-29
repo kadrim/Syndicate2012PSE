@@ -1,8 +1,11 @@
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 
-RUN dpkg --add-architecture i386 && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y wine32 winetricks xvfb && apt-get clean
+RUN dpkg --add-architecture i386 && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y net-tools dos2unix wget gpg xvfb && apt-get clean
 
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y net-tools dos2unix && apt-get clean
+RUN mkdir -pm755 /etc/apt/keyrings \
+    && wget -O - https://dl.winehq.org/wine-builds/winehq.key | gpg --dearmor -o /etc/apt/keyrings/winehq-archive.key - \
+    && wget -NP /etc/apt/sources.list.d/ https://dl.winehq.org/wine-builds/ubuntu/dists/noble/winehq-noble.sources \
+    && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends winehq-devel winetricks
 
 RUN useradd -ms /bin/bash appuser
 
@@ -12,13 +15,17 @@ RUN chown -R appuser:appuser .
 
 USER appuser
 
-RUN winetricks -q dotnet452
-
 COPY --chown=appuser Docker/Syndicate2012PSE/startup.sh .
 
 RUN dos2unix startup.sh && chmod +x startup.sh
 
 COPY --chown=appuser ./ ./
+
+RUN wget https://download.visualstudio.microsoft.com/download/pr/27bcdd70-ce64-4049-ba24-2b14f9267729/d4a435e55182ce5424a7204c2cf2b3ea/windowsdesktop-runtime-8.0.11-win-x64.exe \
+    && WINEARCH=win64 WINEDLLOVERRIDES=mscoree=d wineboot \
+    && winetricks remove_mono \
+    && winetricks win11 \
+    && xvfb-run -a wine windowsdesktop-runtime-8.0.11-win-x64.exe /quiet
 
 ENV HEADLESS=true
 
