@@ -1,8 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.IO;
 using System.Windows.Forms;
 using ComponentAce.Compression.Libs.zlib;
 using System.Security.Cryptography;
