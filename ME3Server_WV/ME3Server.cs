@@ -14,7 +14,6 @@ using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Web;
 using ZLibNet;
-using ME3PlayerDataEditor.PlayerProfile;
 namespace ME3Server_WV
 {
     public static class ME3Server
