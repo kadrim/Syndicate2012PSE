@@ -1,6 +1,6 @@
 FROM ubuntu:24.04
 
-RUN dpkg --add-architecture i386 && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y net-tools dos2unix wget gpg xvfb && apt-get clean
+RUN dpkg --add-architecture i386 && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y sudo dos2unix wget gpg xvfb && apt-get clean
 
 RUN mkdir -pm755 /etc/apt/keyrings \
     && wget -O - https://dl.winehq.org/wine-builds/winehq.key | gpg --dearmor -o /etc/apt/keyrings/winehq-archive.key - \
@@ -25,7 +25,8 @@ RUN wget https://download.visualstudio.microsoft.com/download/pr/27bcdd70-ce64-4
     && WINEARCH=win64 WINEDLLOVERRIDES=mscoree=d wineboot \
     && winetricks remove_mono \
     && winetricks win11 \
-    && xvfb-run -a wine windowsdesktop-runtime-8.0.11-win-x64.exe /quiet
+    && xvfb-run -a wine windowsdesktop-runtime-8.0.11-win-x64.exe /quiet \
+    && rm windowsdesktop-runtime-8.0.11-win-x64.exe
 
 ENV HEADLESS=true
 
