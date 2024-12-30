@@ -9,6 +9,7 @@ services:
         WAYLAND_DISPLAY: $WAYLAND_DISPLAY
         XDG_RUNTIME_DIR: $XDG_RUNTIME_DIR
     network_mode: host
+    user: root
     volumes:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - '../../ME3Server_WV/bin/Debug/cert:/syndicate2012-pse/cert'
