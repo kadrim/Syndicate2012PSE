@@ -70,7 +70,7 @@ Edit `docker-compose.yml` again and set the value of `LOCAL_FQDN` to `true`. Sto
 
 #### Troubleshooting
 
-For help visit the official [Discord-Channel](https://discord.gg/6SmVQy8T)
+For help visit the official [Discord-Channel](https://discord.gg/sqGEkjCgDr)
 
 ### Xbox360 Client
 
