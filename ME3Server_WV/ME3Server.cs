@@ -1349,19 +1349,15 @@ namespace ME3Server_WV
                     Logger.Log("[DIAG][GM] Sent NotifyGameReportingIdChange GID=0x" + game.ID.ToString("X") + " GRID=0x" + reportingId.ToString("X"), Color.Green);
 
                     // Send NotifyGamePlayerStateChange (0x4/0x74) to set player to ActiveConnected.
-                    // PocketRelay sends this when mesh connection is established.
-                    // Without it, the player's state may remain uninitialized,
-                    // causing crashes when the game report handler checks player state.
                     List<Blaze.Tdf> stateNotify = new List<Blaze.Tdf>();
                     stateNotify.Add(Blaze.TdfInteger.Create("GID\0", game.ID));
                     stateNotify.Add(Blaze.TdfInteger.Create("PID\0", player.PlayerID));
-                    stateNotify.Add(Blaze.TdfInteger.Create("STAT", 4)); // ActiveConnected
+                    stateNotify.Add(Blaze.TdfInteger.Create("STAT", 4));
                     byte[] stateBuff = Blaze.CreatePacket(0x4, 0x74, 0, 0x2000, 0, stateNotify);
                     SendPacket(player, stateBuff);
-                    Logger.Log("[DIAG][GM] Sent NotifyGamePlayerStateChange STAT=4 (ActiveConnected) for player " + player.PlayerID, Color.Green);
+                    Logger.Log("[DIAG][GM] Sent NotifyGamePlayerStateChange STAT=4 for player " + player.PlayerID, Color.Green);
 
-                    // Send NotifyPlayerJoinCompleted (0x4/0x1E) to confirm the player
-                    // has fully joined the game session.
+                    // Send NotifyPlayerJoinCompleted (0x4/0x1E)
                     List<Blaze.Tdf> joinNotify = new List<Blaze.Tdf>();
                     joinNotify.Add(Blaze.TdfInteger.Create("GID\0", game.ID));
                     joinNotify.Add(Blaze.TdfInteger.Create("PID\0", player.PlayerID));
@@ -2918,21 +2914,7 @@ namespace ME3Server_WV
                                     GTYP.Value = "Syndicate_Coop";
                                     Logger.Log("[DIAG][GM] Set GTYP to 'Syndicate_Coop' in NotifyGameSetup", Color.Green);
                                     break;
-                                case "HSES":
-                                    // Override stale ME3 host session ID with a value derived from player
-                                    Blaze.TdfInteger HSES = (Blaze.TdfInteger)tdf2;
-                                    HSES.Value = player.PlayerID;
-                                    break;
-                                case "UUID":
-                                    // Generate a unique UUID per game instead of reusing ME3 template
-                                    Blaze.TdfString UUID2 = (Blaze.TdfString)tdf2;
-                                    UUID2.Value = Guid.NewGuid().ToString();
-                                    break;
-                                case "SEED":
-                                    // Generate a fresh random seed per game
-                                    Blaze.TdfInteger SEED2 = (Blaze.TdfInteger)tdf2;
-                                    SEED2.Value = (long)(new Random().Next());
-                                    break;
+
                             }
                         }
                         break;
@@ -3119,7 +3101,7 @@ namespace ME3Server_WV
                 Blaze.TdfInteger GSET = (Blaze.TdfInteger)GAME.Values[6];
                 GSET.Value = game.GAMESETTING;
                 Blaze.TdfInteger GSID = (Blaze.TdfInteger)GAME.Values[7];
-                GSID.Value = 0x4000000618E41C;
+                GSID.Value = game.GSID != 0 ? game.GSID : 0x4000000618E41C;
                 Blaze.TdfInteger GSTA = (Blaze.TdfInteger)GAME.Values[8];
                 GSTA.Value = game.GAMESTATE;
                 Blaze.TdfList HNET = (Blaze.TdfList)GAME.Values[10];
@@ -3151,6 +3133,15 @@ namespace ME3Server_WV
                 HPID.Value = game.Creator.PlayerID;
                 Blaze.TdfString UUID = (Blaze.TdfString)GAME.Values[26];
                 UUID.Value = "f5193367-c991-4429-aee4-8d5f3adab938";
+                // Apply GTYP override so joiner matches host's game type
+                foreach (Blaze.Tdf gtdf in GAME.Values)
+                {
+                    if (gtdf.Label == "GTYP" && gtdf is Blaze.TdfString)
+                    {
+                        ((Blaze.TdfString)gtdf).Value = "Syndicate_Coop";
+                        break;
+                    }
+                }
                 #endregion
 #region PROS
                 Blaze.TdfList PROS = (Blaze.TdfList)form[1];
