@@ -22,8 +22,10 @@ namespace ME3Server_WV
             public int GAMESETTING, GAMESTATE;
             public long ID;
             public long MID;
+            public long GSID;
             public bool Update;
             public bool isActive;
+            public string VSTR = "";
 
             public static GameInfo CreateGame(Player.PlayerInfo player)
             {
@@ -37,6 +39,7 @@ namespace ME3Server_WV
                 res.Attributes = new List<Attribut>();
                 res.GAMESETTING = 0;
                 res.GAMESTATE = 0;
+                res.GSID = 0;
                 AllGames.Add(res);
                 return res;
             }
@@ -130,6 +133,25 @@ namespace ME3Server_WV
                 Logger.Log("[Game] " + g.isActive + " - " + g.ID + " - " + g.OtherPlayers.Count, System.Drawing.Color.LightBlue);
                 if (g.isActive && g.OtherPlayers.Count < 3)
                     return g;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Finds the active game that a player is currently in (as creator or other player).
+        /// </summary>
+        public static GameInfo FindByPlayer(Player.PlayerInfo player)
+        {
+            for (int i = AllGames.Count - 1; i >= 0; i--)
+            {
+                GameInfo g = AllGames[i];
+                if (!g.isActive)
+                    continue;
+                if (g.Creator != null && g.Creator.PlayerID == player.PlayerID)
+                    return g;
+                foreach (Player.PlayerInfo pl in g.OtherPlayers)
+                    if (pl.PlayerID == player.PlayerID)
+                        return g;
             }
             return null;
         }

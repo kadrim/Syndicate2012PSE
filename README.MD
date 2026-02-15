@@ -65,7 +65,7 @@ Edit `docker-compose.yml` again and set the value of `LOCAL_FQDN` to `true`. Sto
 - Start the game and select `CO-OP`
 - You will have to enter login credentials. The service comes with `4` premade users `player1`, `player2`, `player3` and `player4`, the password for all is `1234`
 - If you want additional users, simply create new ones in the server using `Tools -> Create Player Profile`
-- Within the game select `Create private game` and start it
+- Within the game select `Create private game`
 - If another user shall join, he simply has to select `Play quick match` to join the previously created game
 
 #### Troubleshooting
@@ -96,7 +96,6 @@ docker compose up
 ## Todos
 
 - Fix Coop / Multiplayer for Xbox360
-- Fix quitting and finishing a Mission (Crash of Game-Client)
 - Save Stats of each Player
 - Add support for PS3 Version
 - Enable Cross-Platform play
