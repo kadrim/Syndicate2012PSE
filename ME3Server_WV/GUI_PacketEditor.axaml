@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ME3Server_WV.GUI_PacketEditor"
+        Title="Packet Viewer"
+        Width="800" Height="450">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="File">
+                <MenuItem Header="Open BIN" Click="openBINMenuItem_Click"/>
+            </MenuItem>
+            <MenuItem Header="Packet">
+                <MenuItem Header="Save Raw" Click="saveRawMenuItem_Click"/>
+                <MenuItem Header="Export Tree" Click="exportTreeMenuItem_Click"/>
+                <MenuItem Header="Find by Component" Click="findByComponentMenuItem_Click"/>
+                <MenuItem Header="Find by Command" Click="findByCommandMenuItem_Click"/>
+                <MenuItem Header="Search Again" Click="searchAgainMenuItem_Click"/>
+            </MenuItem>
+            <MenuItem Header="View">
+                <MenuItem Header="Tree" x:Name="treeMenuItem" Click="treeMenuItem_Click"/>
+                <MenuItem Header="Raw" x:Name="rawMenuItem" Click="rawMenuItem_Click"/>
+            </MenuItem>
+        </Menu>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="4">
+            <TextBox x:Name="toolStripTextBox1" Width="100" Text="9E 1B 65" Margin="2"/>
+            <Button Content="TAG->" Click="toolStripButton1_Click" Margin="2"/>
+            <Button Content="&lt;-LABEL" Click="toolStripButton2_Click" Margin="2"/>
+            <TextBox x:Name="toolStripTextBox2" Width="100" Text="CONF" Margin="2"/>
+            <Separator Width="10"/>
+            <TextBox x:Name="toolStripTextBox3" Width="100" Text="12345678" Margin="2"/>
+            <Button Content="Encode->" Click="toolStripButton3_Click" Margin="2"/>
+            <Button Content="&lt;-Decode" Click="toolStripButton4_Click" Margin="2"/>
+            <TextBox x:Name="toolStripTextBox4" Width="100" Text="9E AC E5 AD 17 " Margin="2"/>
+        </StackPanel>
+        <Grid ColumnDefinitions="3*,5,2*">
+            <ListBox x:Name="listBox1" Grid.Column="0"
+                     FontFamily="Consolas, Courier New, monospace" FontSize="12"
+                     SelectionChanged="listBox1_SelectionChanged"/>
+            <GridSplitter Grid.Column="1" ResizeDirection="Columns" Background="Gray"/>
+            <Grid Grid.Column="2" RowDefinitions="2*,5,*">
+                <Panel Grid.Row="0">
+                    <TreeView x:Name="treeView1" FontFamily="Consolas, Courier New, monospace" FontSize="12"
+                              SelectionChanged="treeView1_SelectionChanged">
+                        <TreeView.ItemTemplate>
+                            <TreeDataTemplate ItemsSource="{Binding Children}">
+                                <TextBlock Text="{Binding Text}"/>
+                            </TreeDataTemplate>
+                        </TreeView.ItemTemplate>
+                    </TreeView>
+                    <TextBox x:Name="rtb2" IsReadOnly="True" AcceptsReturn="True"
+                             FontFamily="Consolas, Courier New, monospace" FontSize="12"
+                             TextWrapping="NoWrap" IsVisible="False"/>
+                </Panel>
+                <GridSplitter Grid.Row="1" ResizeDirection="Rows" Background="Gray"/>
+                <TextBox x:Name="rtb1" Grid.Row="2" IsReadOnly="True" AcceptsReturn="True"
+                         FontFamily="Consolas, Courier New, monospace" FontSize="12"
+                         TextWrapping="NoWrap"/>
+            </Grid>
+        </Grid>
+    </DockPanel>
+</Window>

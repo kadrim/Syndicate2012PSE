@@ -1,0 +1,20 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ME3Server_WV.GUI_PlayerSettings"
+        Title="Player Settings"
+        Width="700" Height="500"
+        WindowStartupLocation="CenterOwner">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="5">
+            <Button x:Name="saveButton" Content="Save" Click="saveButton_Click" Margin="2"/>
+        </StackPanel>
+        <Grid ColumnDefinitions="200,5,*">
+            <ListBox x:Name="listBox1" Grid.Column="0" SelectionChanged="listBox1_SelectionChanged"/>
+            <GridSplitter Grid.Column="1" Width="5"/>
+            <TextBox x:Name="rtb1" Grid.Column="2"
+                     AcceptsReturn="True"
+                     TextWrapping="Wrap"
+                     FontFamily="Consolas, Courier New, monospace"/>
+        </Grid>
+    </DockPanel>
+</Window>

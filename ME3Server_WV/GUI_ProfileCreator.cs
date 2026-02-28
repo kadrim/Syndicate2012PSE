@@ -1,19 +1,14 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
 using System.Security.Cryptography;
+using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 
 namespace ME3Server_WV
 {
-    public partial class GUI_ProfileCreator : Form
+    public partial class GUI_ProfileCreator : Window
     {
-
         private long currentID;
 
         public GUI_ProfileCreator()
@@ -21,7 +16,7 @@ namespace ME3Server_WV
             InitializeComponent();
         }
 
-        private void textBox2_TextChanged(object sender, EventArgs e)
+        private void textBox2_TextChanged(object sender, TextChangedEventArgs e)
         {
             if (IsValidPlayerName(textBox2.Text))
             {
@@ -45,9 +40,8 @@ namespace ME3Server_WV
             return Convert.ToInt64(res, 16);
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private async void button1_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            string msg;
             if (textBox1.Text == "")
             {
                 textBox2.Focus();
@@ -60,56 +54,63 @@ namespace ME3Server_WV
             }
 
             string playertextfile = Frontend.loc + "player" + Path.DirectorySeparatorChar + textBox2.Text + ".txt";
-            bool overwritten = false;
             if (File.Exists(playertextfile))
             {
-                msg = "A file named '" + textBox2.Text + ".txt' already exists inside the player folder and is about to be overwritten.\n\n";
+                string msg = "A file named '" + textBox2.Text + ".txt' already exists inside the player folder and is about to be overwritten.\n\n";
                 msg += "If you proceed, server-side data from that file's respective profile will be lost.\n\nContinue?";
-                if (MessageBox.Show(msg, "Name conflict", MessageBoxButtons.YesNo) == System.Windows.Forms.DialogResult.No)
+                var confirmDialog = new InputDialog("Name conflict", msg, "yes");
+                var confirmResult = await confirmDialog.ShowDialog<string>(this);
+                if (confirmResult == null || confirmResult.ToLower() != "yes")
                     return;
-                overwritten = true;
             }
 
-            DialogResult dr = MessageBox.Show("Do you want to create a Local_Profile.sav for this profile?", "Local_Profile.sav", MessageBoxButtons.YesNo);
+            // Ask about creating Local_Profile.sav
+            var savDialog = new InputDialog("Local_Profile.sav", "Create a Local_Profile.sav for this profile? (yes/no)", "yes");
+            var savResult = await savDialog.ShowDialog<string>(this);
 
-            if (dr == DialogResult.Yes)
+            if (savResult != null && savResult.ToLower() == "yes")
             {
-                SaveFileDialog d = new SaveFileDialog();
-                d.Filter = "*.sav|*.sav";
-                d.FileName = "Local_Profile.sav";
-                string AUTH = currentID.ToString("X8") + "UoE4gBscrqJNM7j6nR84thRQrPmaqc1TgbPCXc3vTmOf-1jnUBttCGvO-j2M2RG54CP48eNSZHqbHLnGeP8PL4YsPVsqKU9s9CmyKohn9ezWeQ5HhX9u9wVY";
-                if (d.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-                    File.WriteAllBytes(d.FileName, Local_Profile.CreateProfile((int)currentID, AUTH));
+                var topLevel = TopLevel.GetTopLevel(this);
+                var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+                {
+                    Title = "Save Local_Profile.sav",
+                    SuggestedFileName = "Local_Profile.sav",
+                    DefaultExtension = "sav",
+                    FileTypeChoices = new[] { new FilePickerFileType("SAV files") { Patterns = new[] { "*.sav" } } }
+                });
+                if (file != null)
+                {
+                    string AUTH = currentID.ToString("X8") + "UoE4gBscrqJNM7j6nR84thRQrPmaqc1TgbPCXc3vTmOf-1jnUBttCGvO-j2M2RG54CP48eNSZHqbHLnGeP8PL4YsPVsqKU9s9CmyKohn9ezWeQ5HhX9u9wVY";
+                    var filePath = file.TryGetLocalPath();
+                    if (filePath != null)
+                        File.WriteAllBytes(filePath, Local_Profile.CreateProfile((int)currentID, AUTH));
+                }
             }
 
             if (!CreateProfile(currentID, textBox2.Text, textBox3.Text))
             {
-                MessageBox.Show("Error on creating player profile text file.");
+                Logger.Log("Error on creating player profile text file.", LogColor.Red);
                 return;
             }
 
-            msg = "Done.\n\nFile 'player" + Path.DirectorySeparatorChar + textBox2.Text + ".txt' has been " + (overwritten ? "overwritten." : "created.");
-            msg += "\n\nLogin: " + textBox2.Text + "\nPassword: " + textBox3.Text;
-            MessageBox.Show(msg, "Profile creation", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            string doneMsg = "File 'player" + Path.DirectorySeparatorChar + textBox2.Text + ".txt' has been created.";
+            doneMsg += " Login: " + textBox2.Text + " / Password: " + textBox3.Text;
+            Logger.Log(doneMsg, LogColor.DarkGreen);
             this.Close();
         }
 
         public static bool IsValidPlayerName(string name)
         {
-            // char count must be higher than 0 (or 'not 0' since an instance of string never has negative length)
             if (name.Length == 0)
                 return false;
-            // invalid fn chars
             bool hasInvalidChar = false;
             char[] invalidchars = Path.GetInvalidFileNameChars();
             foreach (char c in invalidchars)
                 hasInvalidChar |= name.Contains(c);
             if (hasInvalidChar)
                 return false;
-            // first char can't be space or dot
             if (name[0] == ' ' || name[0] == '.')
-                return false ;
-            // last char can't be space or dot
+                return false;
             if (name[name.Length - 1] == ' ' || name[name.Length - 1] == '.')
                 return false;
             return true;
@@ -117,13 +118,10 @@ namespace ME3Server_WV
 
         public static bool IsValidPassword(string pw)
         {
-            // password cannot be empty string
             if (String.IsNullOrEmpty(pw))
                 return false;
-            // password cannot have more than 10 chars
             if (pw.Length > 10)
                 return false;
-            // password cannot contain spaces
             if (pw.Contains(' '))
                 return false;
             return true;
@@ -134,7 +132,7 @@ namespace ME3Server_WV
             const string availablechars = "abcdefghijklmnopqrstuvwxyz0123456789";
             Random r = new Random();
             string finalpassword = "";
-            int desiredlength = r.Next(3,6);
+            int desiredlength = r.Next(3, 6);
             for (int i = 0; i < desiredlength; i++)
                 finalpassword += availablechars[r.Next(0, availablechars.Length - 1)];
             return finalpassword;

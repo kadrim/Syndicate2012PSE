@@ -1,30 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
+using Avalonia.Controls;
 
 namespace ME3Server_WV
 {
-    public partial class GUI_GameList : Form
+    public partial class GUI_GameList : UserControl
     {
+        private Avalonia.Threading.DispatcherTimer timer1;
+        public List<int> Indexes = new List<int>();
+
         public GUI_GameList()
         {
             InitializeComponent();
+            timer1 = new Avalonia.Threading.DispatcherTimer();
+            timer1.Interval = TimeSpan.FromMilliseconds(100);
+            timer1.Tick += timer1_Tick;
+            timer1.Start();
         }
-        public List<int> Indexes = new List<int>();
 
         private void timer1_Tick(object sender, EventArgs e)
         {
-            if (GameManager.AllGames== null)
+            if (GameManager.AllGames == null)
                 return;
             int count = 0;
             bool update = false;
             Indexes = new List<int>();
-            for (int i = 0; i < GameManager.AllGames.Count; i++) 
+            for (int i = 0; i < GameManager.AllGames.Count; i++)
             {
                 GameManager.GameInfo g = GameManager.AllGames[i];
                 if (g.isActive)
@@ -38,13 +39,14 @@ namespace ME3Server_WV
                     g.Update = false;
                 }
             }
-            if (count != listBox1.Items.Count || update)
+            if (count != listBox1.ItemCount || update)
             {
                 int n = listBox1.SelectedIndex;
-                listBox1.Items.Clear();
+                var items = new List<string>();
                 foreach (int idx in Indexes)
-                    listBox1.Items.Add(GetInfo(GameManager.AllGames[idx]));
-                if (n < listBox1.Items.Count)
+                    items.Add(GetInfo(GameManager.AllGames[idx]));
+                listBox1.ItemsSource = items;
+                if (n >= 0 && n < listBox1.ItemCount)
                     listBox1.SelectedIndex = n;
             }
         }
@@ -56,10 +58,10 @@ namespace ME3Server_WV
             return s;
         }
 
-        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
+        private void listBox1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             int n = listBox1.SelectedIndex;
-            if (n == -1)
+            if (n == -1 || n >= Indexes.Count)
                 return;
             string s = "";
             GameManager.GameInfo g = GameManager.AllGames[Indexes[n]];
@@ -71,15 +73,15 @@ namespace ME3Server_WV
             foreach (GameManager.GameInfo.Attribut a in g.Attributes)
                 s += "\t" + a.Name + " = " + a.Value + "\n";
             s += "\nPlayer Summary (Creator):\n" + CreatePlayerSummary(g.Creator);
-            foreach(Player.PlayerInfo player in g.OtherPlayers)
+            foreach (Player.PlayerInfo player in g.OtherPlayers)
                 s += "\nPlayer Summary (Other Player):\n" + CreatePlayerSummary(player);
             rtb1.Text = s;
         }
 
         private string CreatePlayerSummary(Player.PlayerInfo player)
         {
-            string s = "";            
-            s += " Player Name : " + player.Name + "\n";            
+            string s = "";
+            s += " Player Name : " + player.Name + "\n";
             s += " Player ID   : 0x" + player.ID.ToString("X") + "\n";
             s += " Player PID  : 0x" + player.PlayerID.ToString("X") + "\n";
             s += " Player UID  : 0x" + player.UserID.ToString("X") + "\n";

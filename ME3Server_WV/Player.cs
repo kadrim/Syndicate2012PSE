@@ -1,14 +1,11 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Diagnostics;
 using System.Threading;
-using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
 namespace ME3Server_WV

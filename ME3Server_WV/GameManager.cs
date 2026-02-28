@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace ME3Server_WV
 {
@@ -128,9 +126,9 @@ namespace ME3Server_WV
 
         public static GameInfo FindFirstActive()
         {
-            Logger.Log("Finding games ... ", System.Drawing.Color.Blue);
+            Logger.Log("Finding games ... ", LogColor.Blue);
             foreach (GameInfo g in AllGames) {
-                Logger.Log("[Game] " + g.isActive + " - " + g.ID + " - " + g.OtherPlayers.Count, System.Drawing.Color.LightBlue);
+                Logger.Log("[Game] " + g.isActive + " - " + g.ID + " - " + g.OtherPlayers.Count, LogColor.Cyan);
                 if (g.isActive && g.OtherPlayers.Count < 3)
                     return g;
             }

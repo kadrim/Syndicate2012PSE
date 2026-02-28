@@ -1,24 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+using Avalonia;
 
 namespace PacketViewer
 {
     static class Program
     {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
-            Application.EnableVisualStyles();
-            Application.SetCompatibleTextRenderingDefault(false);
-            ME3Server_WV.GUI_PacketEditor p = new ME3Server_WV.GUI_PacketEditor();
-            p.MainMenuStrip.Visible = true;
-            Application.Run(p);
+            BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
         }
+
+        public static AppBuilder BuildAvaloniaApp()
+            => AppBuilder.Configure(() => new App())
+                .UsePlatformDetect()
+                .LogToTrace();
     }
 }
