@@ -84,9 +84,7 @@ For help visit the official [Discord-Channel](https://discord.gg/sqGEkjCgDr)
 
 The game itself runs pretty decent on `SteamOS` and `Ubuntu` using [Steam](https://store.steampowered.com/about/) (add Syndicate as a non-steam game) and by turning on the compatibility using `Proton` (i.e. `Proton 9.0-4`, best results so far with `GE-Proton7-43`).
 
-To use the Server on a Linux machine you simply have to copy the file `Linux/compose.override.yaml` to the root directory of this project (so one directory up). If you are running this on a desktop with GUI you can enable the GUI by editing the copied file and setting `HEADLESS` to `false` and also run the command `xhost local:` to enable the usage of your Display within the container.
-
-Afterwards rebuild and rerun the services by executing:
+The Server runs natively on Linux. To run the dependency services:
 
 ```
 docker compose build
