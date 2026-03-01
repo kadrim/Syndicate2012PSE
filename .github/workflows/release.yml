@@ -50,7 +50,6 @@ jobs:
         xcopy ME3Server_WV\bin\Debug $dir /s /e
         xcopy "publish\${{ matrix.rid }}" $dir /s /e /y
         xcopy Docker "$dir\Docker" /s /e /i
-        xcopy SSLv3Proxy "$dir\SSLv3Proxy" /s /e /i
         xcopy submodules "$dir\submodules" /s /e /i
         xcopy Xenia-WebServices "$dir\Xenia-WebServices" /s /e /i
         xcopy docker-compose.yml $dir
@@ -66,7 +65,6 @@ jobs:
         cp -r ME3Server_WV/bin/Debug/* "$DIR/"
         cp -r publish/${{ matrix.rid }}/* "$DIR/"
         cp -r Docker "$DIR/Docker"
-        cp -r SSLv3Proxy "$DIR/SSLv3Proxy"
         cp -r submodules "$DIR/submodules"
         cp -r Xenia-WebServices "$DIR/Xenia-WebServices"
         cp docker-compose.yml "$DIR/"
