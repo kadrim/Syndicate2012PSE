@@ -24,6 +24,8 @@ namespace ME3Server_WV
             public bool Update;
             public bool isActive;
             public string VSTR = "";
+            public byte[] XNNC = null;
+            public byte[] XSES = null;
 
             public static GameInfo CreateGame(Player.PlayerInfo player)
             {

@@ -1110,6 +1110,10 @@ namespace ME3Server_WV
                     player.Name = Config.FindEntry("OriginName") + "_" + player.ID;
                     player.PlayerID = ConvertHex(Config.FindEntry("OriginPID")) + player.ID;
                     player.UserID = ConvertHex(Config.FindEntry("OriginUID")) + player.ID;
+                    player.IsXbox = true;
+                    // Store XUID from login for Xbox networking
+                    if (content.Count >= 3 && content[2] is Blaze.TdfInteger && content[2].Label == "XUID")
+                        player.XboxXUID = ((Blaze.TdfInteger)content[2]).Value;
                     player.Update = true;
                     Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:AA] (xboxLogin) Name=" + player.Name + ", PID=0x" + player.PlayerID.ToString("X"), LogColor.Orange);
                     CreateAuthPacket01(player, p);
@@ -1386,9 +1390,31 @@ namespace ME3Server_WV
             {
                 List<Blaze.Tdf> input = Blaze.ReadPacketContent(p);
                 long gameId = 0;
-                if (input.Count >= 1 && input[0] is Blaze.TdfInteger)
-                    gameId = ((Blaze.TdfInteger)input[0]).Value;
+                foreach (Blaze.Tdf tdf in input)
+                {
+                    if (tdf.Label == "GID " && tdf is Blaze.TdfInteger)
+                        gameId = ((Blaze.TdfInteger)tdf).Value;
+                    else if (tdf.Label == "XNNC" && tdf is Blaze.TdfBlob)
+                    {
+                        GameManager.GameInfo tmpGame = GameManager.FindByGID(gameId);
+                        if (tmpGame == null) tmpGame = GameManager.FindByPlayer(player);
+                        if (tmpGame != null)
+                            tmpGame.XNNC = ((Blaze.TdfBlob)tdf).Data;
+                    }
+                    else if (tdf.Label == "XSES" && tdf is Blaze.TdfBlob)
+                    {
+                        GameManager.GameInfo tmpGame = GameManager.FindByGID(gameId);
+                        if (tmpGame == null) tmpGame = GameManager.FindByPlayer(player);
+                        if (tmpGame != null)
+                            tmpGame.XSES = ((Blaze.TdfBlob)tdf).Data;
+                    }
+                }
                 GameManager.GameInfo game = GameManager.FindByGID(gameId);
+                if (game == null) game = GameManager.FindByPlayer(player);
+                if (game != null)
+                {
+                    Logger.Log("[DIAG][GM] finalizeGameCreation: XNNC=" + (game.XNNC != null ? "blob[" + game.XNNC.Length + "]" : "null") + " XSES=" + (game.XSES != null ? "blob[" + game.XSES.Length + "]" : "null"), LogColor.Cyan);
+                }
                 // Send empty response to acknowledge
                 SendEmpty(player, p, 0x1000);
                 if (game != null)
@@ -2544,27 +2570,52 @@ namespace ME3Server_WV
                     {
                         case "ADDR":
                             Blaze.TdfUnion ADDR = (Blaze.TdfUnion)tdf;
-                            Blaze.TdfStruct VALU = (Blaze.TdfStruct)ADDR.UnionContent;
-                            Blaze.TdfStruct INIP = (Blaze.TdfStruct)VALU.Values[1];
-                            //Blaze.TdfInteger IP = (Blaze.TdfInteger)INIP.Values[0];
-                            Blaze.TdfInteger PORT = (Blaze.TdfInteger)INIP.Values[1];
-                            player.INIP = new Player.NETDATA();
-                            player.INIP.IP = player.GetIPvalue();
-                            player.INIP.PORT = (uint)PORT.Value;
-                            player.EXIP = new Player.NETDATA();
-                            player.EXIP.IP = player.GetIPvalue();
-                            player.EXIP.PORT = player.INIP.PORT;
+                            if (ADDR.UnionType == 0x02)
+                            {
+                                // PC-style: EXIP/INIP structs
+                                Blaze.TdfStruct VALU = (Blaze.TdfStruct)ADDR.UnionContent;
+                                Blaze.TdfStruct INIP = (Blaze.TdfStruct)VALU.Values[1];
+                                Blaze.TdfInteger PORT = (Blaze.TdfInteger)INIP.Values[1];
+                                player.INIP = new Player.NETDATA();
+                                player.INIP.IP = player.GetIPvalue();
+                                player.INIP.PORT = (uint)PORT.Value;
+                                player.EXIP = new Player.NETDATA();
+                                player.EXIP.IP = player.GetIPvalue();
+                                player.EXIP.PORT = player.INIP.PORT;
+                                player.IsXbox = false;
+                            }
+                            else if (ADDR.UnionType == 0x00)
+                            {
+                                // Xbox-style: XDDR blob + XUID integer
+                                Blaze.TdfStruct VALU = (Blaze.TdfStruct)ADDR.UnionContent;
+                                player.IsXbox = true;
+                                foreach (Blaze.Tdf field in VALU.Values)
+                                {
+                                    if (field.Label == "XDDR" && field is Blaze.TdfBlob)
+                                        player.XboxXDDR = ((Blaze.TdfBlob)field).Data;
+                                    else if (field.Label == "XUID" && field is Blaze.TdfInteger)
+                                        player.XboxXUID = ((Blaze.TdfInteger)field).Value;
+                                }
+                                // Don't set EXIP/INIP here - the host's own createGame response
+                                // must have 0,0 or the Xbox client rejects it.
+                                // IP fallback is applied on-demand in join code (HNET/PNET for joiners).
+                                Logger.Log("[DIAG][7802:14] Xbox updateNetworkInfo: XUID=0x" + player.XboxXUID.ToString("X") + " XDDR=blob[" + (player.XboxXDDR != null ? player.XboxXDDR.Length : 0) + "] IP=" + player.IP + ":3659", LogColor.Cyan);
+                            }
+                            else
+                            {
+                                Logger.Log("[DIAG][7802:14] Unknown ADDR union type: " + ADDR.UnionType, LogColor.Orange);
+                            }
                             break;
 
                     }
                 }
-                SendEmpty(player, p, 0x1000);
             }
             catch (Exception e)
             {
                 Logger.Log("[Main Server Handler " + player.ID + "][Handler_7802:14] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
-
+            // Always send empty response so the client isn't left waiting
+            SendEmpty(player, p, 0x1000);
         }      
         public static void CreateBootPacket01(Player.PlayerInfo player, Blaze.Packet p)
         {
@@ -3076,6 +3127,26 @@ namespace ME3Server_WV
             m.Write(buff, 0, buff.Length);
             //Send Joiner
             SendPacket(player, m.ToArray());
+
+            // Send post-join notifications to finalize the player's join
+            // NotifyGamePlayerStateChange (0x4/0x74) - set joining player to ActiveConnected (STAT=4)
+            List<Blaze.Tdf> stateNotify = new List<Blaze.Tdf>();
+            stateNotify.Add(Blaze.TdfInteger.Create("GID\0", game.ID));
+            stateNotify.Add(Blaze.TdfInteger.Create("PID\0", player.PlayerID));
+            stateNotify.Add(Blaze.TdfInteger.Create("STAT", 4));
+            byte[] stateBuff = Blaze.CreatePacket(0x4, 0x74, 0, 0x2000, 0, stateNotify);
+            foreach (Player.PlayerInfo pl in game.AllPlayers)
+                SendPacket(pl, stateBuff);
+            Logger.Log("[DIAG][GM] Sent NotifyGamePlayerStateChange STAT=4 for joining player " + player.PlayerID, LogColor.DarkGreen);
+
+            // NotifyPlayerJoinCompleted (0x4/0x1E) - tell client the join is complete
+            List<Blaze.Tdf> joinNotify = new List<Blaze.Tdf>();
+            joinNotify.Add(Blaze.TdfInteger.Create("GID\0", game.ID));
+            joinNotify.Add(Blaze.TdfInteger.Create("PID\0", player.PlayerID));
+            byte[] joinBuff = Blaze.CreatePacket(0x4, 0x1E, 0, 0x2000, 0, joinNotify);
+            foreach (Player.PlayerInfo pl in game.AllPlayers)
+                SendPacket(pl, joinBuff);
+            Logger.Log("[DIAG][GM] Sent NotifyPlayerJoinCompleted for joining player " + player.PlayerID, LogColor.DarkGreen);
         }
         public static void CreatePlayerJoinInfoForHost(GameManager.GameInfo game, Player.PlayerInfo player)
         {
@@ -3100,7 +3171,7 @@ namespace ME3Server_WV
                 NAME.Value = player.Name;
                 Blaze.TdfInteger PID = (Blaze.TdfInteger)PDAT.Values[5];
                 PID.Value = player.PlayerID;
-                PDAT.Values[6] = GetTdfUnionIP(player, "PNET");
+                PDAT.Values[6] = GetTdfUnionIPForP2P(player, "PNET");
                 Blaze.TdfInteger SID = (Blaze.TdfInteger)PDAT.Values[7];
                 SID.Value = game.OtherPlayers.Count;
                 Blaze.TdfInteger UID = (Blaze.TdfInteger)PDAT.Values[13];
@@ -3112,7 +3183,7 @@ namespace ME3Server_WV
                 resp = Blaze.ReadBlazePacket(new MemoryStream(buff));
                 form = Blaze.ReadPacketContent(resp);
                 Blaze.TdfStruct DATA = (Blaze.TdfStruct)form[0];
-                DATA.Values[0] = GetTdfUnionIP(player, "ADDR");
+                DATA.Values[0] = GetTdfUnionIPForP2P(player, "ADDR");
                 Blaze.TdfStruct QDAT = (Blaze.TdfStruct)DATA.Values[7];
                 Blaze.TdfInteger NATT = (Blaze.TdfInteger)QDAT.Values[1];
                 NATT.Value = NAT_Type;
@@ -3171,13 +3242,29 @@ namespace ME3Server_WV
                 Blaze.TdfStruct EXIP = (Blaze.TdfStruct)entry[0];
                 Blaze.TdfInteger IP = (Blaze.TdfInteger)EXIP.Values[0];
                 Blaze.TdfInteger PORT = (Blaze.TdfInteger)EXIP.Values[1];
-                IP.Value = (uint)game.Creator.EXIP.IP;
-                PORT.Value = game.Creator.EXIP.PORT;
+                // For Xbox hosts, EXIP/INIP are 0 — fall back to TCP connection IP
+                uint hnetIP = (uint)game.Creator.EXIP.IP;
+                uint hnetPort = game.Creator.EXIP.PORT;
+                if (hnetIP == 0 && game.Creator.IsXbox)
+                {
+                    hnetIP = game.Creator.GetIPvalue();
+                    hnetPort = 3659;
+                    Logger.Log("[DIAG][JoinInfo] Xbox host HNET fallback: IP=0x" + hnetIP.ToString("X") + " PORT=" + hnetPort, LogColor.Cyan);
+                }
+                IP.Value = hnetIP;
+                PORT.Value = hnetPort;
                 Blaze.TdfStruct INIP = (Blaze.TdfStruct)entry[1];
                 IP = (Blaze.TdfInteger)INIP.Values[0];
                 PORT = (Blaze.TdfInteger)INIP.Values[1];
-                IP.Value = (uint)game.Creator.INIP.IP;
-                PORT.Value = game.Creator.INIP.PORT;
+                uint hnetINIP = (uint)game.Creator.INIP.IP;
+                uint hnetINPort = game.Creator.INIP.PORT;
+                if (hnetINIP == 0 && game.Creator.IsXbox)
+                {
+                    hnetINIP = game.Creator.GetIPvalue();
+                    hnetINPort = 3659;
+                }
+                IP.Value = hnetINIP;
+                PORT.Value = hnetINPort;
                 Blaze.TdfInteger HSES = (Blaze.TdfInteger)GAME.Values[11];
                 HSES.Value = 0x112888C1;
                 Blaze.TdfStruct NQOS = (Blaze.TdfStruct)GAME.Values[14];
@@ -3195,13 +3282,27 @@ namespace ME3Server_WV
                 HPID.Value = game.Creator.PlayerID;
                 Blaze.TdfString UUID = (Blaze.TdfString)GAME.Values[26];
                 UUID.Value = "f5193367-c991-4429-aee4-8d5f3adab938";
-                // Apply GTYP override so joiner matches host's game type
+                // Apply GTYP, VSTR, XNNC, XSES overrides so joiner matches host's game
                 foreach (Blaze.Tdf gtdf in GAME.Values)
                 {
                     if (gtdf.Label == "GTYP" && gtdf is Blaze.TdfString)
                     {
                         ((Blaze.TdfString)gtdf).Value = "Syndicate_Coop";
-                        break;
+                    }
+                    if (gtdf.Label == "VSTR" && gtdf is Blaze.TdfString && !string.IsNullOrEmpty(game.VSTR))
+                    {
+                        ((Blaze.TdfString)gtdf).Value = game.VSTR;
+                    }
+                    // Forward Xbox session data from host's finalizeGameCreation
+                    if (gtdf.Label == "XNNC" && gtdf is Blaze.TdfBlob && game.XNNC != null)
+                    {
+                        ((Blaze.TdfBlob)gtdf).Data = game.XNNC;
+                        Logger.Log("[DIAG][JoinInfo] Forwarding XNNC blob[" + game.XNNC.Length + "] to joiner", LogColor.Cyan);
+                    }
+                    if (gtdf.Label == "XSES" && gtdf is Blaze.TdfBlob && game.XSES != null)
+                    {
+                        ((Blaze.TdfBlob)gtdf).Data = game.XSES;
+                        Logger.Log("[DIAG][JoinInfo] Forwarding XSES blob[" + game.XSES.Length + "] to joiner", LogColor.Cyan);
                     }
                 }
                 #endregion
@@ -3231,7 +3332,7 @@ namespace ME3Server_WV
                     PID.Value = tmppl.PlayerID;
                     Blaze.TdfInteger SID = (Blaze.TdfInteger)entry[8];
                     SID.Value = i;
-                    entry[6] = GetTdfUnionIP(tmppl, "PNET");
+                    entry[6] = GetTdfUnionIPForP2P(tmppl, "PNET");
                     Blaze.TdfInteger STAT = (Blaze.TdfInteger)entry[9];
                     if (tmppl.ID == player.ID)
                         STAT.Value = 2;
@@ -3274,7 +3375,7 @@ namespace ME3Server_WV
                 pform = Blaze.ReadBlazePacket(new MemoryStream(buff));
                 form = Blaze.ReadPacketContent(pform);
                 Blaze.TdfStruct DATA = (Blaze.TdfStruct)form[0];
-                DATA.Values[0] = GetTdfUnionIP(player, "ADDR");
+                DATA.Values[0] = GetTdfUnionIPForP2P(player, "ADDR");
                 Blaze.TdfStruct QDAT = (Blaze.TdfStruct)DATA.Values[7];
                 NATT = (Blaze.TdfInteger)QDAT.Values[1];
                 NATT.Value = NAT_Type;
@@ -3299,7 +3400,7 @@ namespace ME3Server_WV
                 Blaze.Packet pform = Blaze.ReadBlazePacket(new MemoryStream(buff));
                 List<Blaze.Tdf> form = Blaze.ReadPacketContent(pform);
                 Blaze.TdfStruct DATA = (Blaze.TdfStruct)form[0];
-                DATA.Values[0] = GetTdfUnionIP(player, "ADDR");
+                DATA.Values[0] = GetTdfUnionIPForP2P(player, "ADDR");
                 Blaze.TdfStruct QDAT = (Blaze.TdfStruct)DATA.Values[7];
                 Blaze.TdfInteger NATT = (Blaze.TdfInteger)QDAT.Values[1];
                 NATT.Value = NAT_Type;
@@ -3865,6 +3966,8 @@ namespace ME3Server_WV
         }
         public static Blaze.TdfUnion GetTdfUnionIP(Player.PlayerInfo player, string label)
         {
+            // Always use IP-based (type 2) for cross-platform compatibility.
+            // Xbox players get their TCP connection IP as fallback.
             List<Blaze.Tdf> list = new List<Blaze.Tdf>();
             list.Add(Blaze.TdfInteger.Create("IP\0\0", player.EXIP.IP));
             list.Add(Blaze.TdfInteger.Create("PORT", player.EXIP.PORT));
@@ -3878,8 +3981,71 @@ namespace ME3Server_WV
             list.Add(INIP);
             Blaze.TdfStruct VALU = Blaze.TdfStruct.Create("VALU", list);
             Blaze.TdfUnion union = Blaze.TdfUnion.Create(label, 0x02, VALU);
-            //Logger.Log(GetStringFromIP(player.INIP.IP) + " " + GetStringFromIP(player.EXIP.IP), LogColor.Magenta);
             return union;
+        }
+
+        /// <summary>
+        /// Like GetTdfUnionIP but for join-related packets where the recipient needs
+        /// real IPs for P2P. For Xbox players whose EXIP/INIP are 0, falls back to
+        /// the TCP connection IP. Do NOT use this for a player's own createGame response
+        /// (Xbox host rejects non-zero IPs in its own session data).
+        /// </summary>
+        public static Blaze.TdfUnion GetTdfUnionIPForP2P(Player.PlayerInfo player, string label)
+        {
+            long exIP = player.EXIP.IP;
+            long exPort = player.EXIP.PORT;
+            long inIP = player.INIP.IP;
+            long inPort = player.INIP.PORT;
+
+            if (exIP == 0 && player.IsXbox)
+            {
+                exIP = player.GetIPvalue();
+                exPort = 3659;
+                inIP = player.GetIPvalue();
+                inPort = 3659;
+            }
+
+            List<Blaze.Tdf> list = new List<Blaze.Tdf>();
+            list.Add(Blaze.TdfInteger.Create("IP\0\0", exIP));
+            list.Add(Blaze.TdfInteger.Create("PORT", exPort));
+            Blaze.TdfStruct EXIP = Blaze.TdfStruct.Create("EXIP", list);
+            list = new List<Blaze.Tdf>();
+            list.Add(Blaze.TdfInteger.Create("IP\0\0", inIP));
+            list.Add(Blaze.TdfInteger.Create("PORT", inPort));
+            Blaze.TdfStruct INIP = Blaze.TdfStruct.Create("INIP", list);
+            list = new List<Blaze.Tdf>();
+            list.Add(EXIP);
+            list.Add(INIP);
+            Blaze.TdfStruct VALU = Blaze.TdfStruct.Create("VALU", list);
+            return Blaze.TdfUnion.Create(label, 0x02, VALU);
+        }
+
+        /// <summary>
+        /// Returns Xbox-style ADDR/PNET union (type 0) with XDDR + XUID for Xbox players.
+        /// Falls back to IP-based union if Xbox data is not available.
+        /// </summary>
+        public static Blaze.TdfUnion GetTdfUnionXbox(Player.PlayerInfo player, string label)
+        {
+            if (player.IsXbox && player.XboxXDDR != null)
+            {
+                List<Blaze.Tdf> list = new List<Blaze.Tdf>();
+                list.Add(Blaze.TdfBlob.Create("XDDR", player.XboxXDDR));
+                list.Add(Blaze.TdfInteger.Create("XUID", player.XboxXUID));
+                Blaze.TdfStruct VALU = Blaze.TdfStruct.Create("VALU", list);
+                return Blaze.TdfUnion.Create(label, 0x00, VALU);
+            }
+            return GetTdfUnionIP(player, label);
+        }
+
+        /// <summary>
+        /// Returns the appropriate ADDR/PNET union for a player, choosing
+        /// Xbox-style (type 0) or IP-style (type 2) based on the player's platform.
+        /// </summary>
+        public static Blaze.TdfUnion GetTdfUnionAuto(Player.PlayerInfo player, string label)
+        {
+            if (player.IsXbox)
+                return GetTdfUnionXbox(player, label);
+            return GetTdfUnionIP(player, label);
         }
         public static string GetExceptionMessage(Exception exception, int innerLevel = 0)
         {

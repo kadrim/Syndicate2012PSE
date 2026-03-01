@@ -38,6 +38,9 @@ namespace ME3Server_WV
             public bool WaitsForJoining = false;
             public NETDATA EXIP;
             public NETDATA INIP;
+            public bool IsXbox = false;
+            public byte[] XboxXDDR = null;
+            public long XboxXUID = 0;
             public Stopwatch PingTimer;
             public struct SettingEntry
             {
