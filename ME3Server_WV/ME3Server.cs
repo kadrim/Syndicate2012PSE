@@ -1,23 +1,23 @@
-﻿using System;
+using System;
 using System.IO;
 using System.IO.Compression;
 using System.Collections.Generic;
 using System.Linq;
-using System.Drawing;
-using System.Windows.Forms;
+
+
 using System.Net;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading;
 using System.Security.Cryptography.X509Certificates;
-using System.Security.Principal;
+
 using Microsoft.AspNetCore.WebUtilities;
 namespace ME3Server_WV
 {
     public static class ME3Server
     {
         private static readonly object _sync = new object();
-        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
+        private static string loc = AppContext.BaseDirectory;
         private static bool exitnow = false;
         public static bool isMITM = false;
         public static int NAT_Type;
@@ -33,62 +33,55 @@ namespace ME3Server_WV
         {
             if (File.Exists(Logger.mainlogpath))
                 File.Delete(Logger.mainlogpath);
-            Logger.Log("Syndicate 2012 Private Server Emulator by Kadrim", Color.DarkBlue);
-            Logger.Log("Program: " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(), Color.DarkBlue);
-            Logger.Log("OSVersion: " + Environment.OSVersion.ToString(), Color.DarkBlue);
-            Logger.Log("Starting...", Color.Black);
+            Logger.Log("Syndicate 2012 Private Server Emulator by Kadrim", LogColor.DarkBlue);
+            Logger.Log("Program: " + System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString(), LogColor.DarkBlue);
+            Logger.Log("OSVersion: " + Environment.OSVersion.ToString(), LogColor.DarkBlue);
+            Logger.Log("Starting...", LogColor.Black);
             Config.Load();
             Logger.DeleteLogs();
             LoadInitialConfig();
             tTick = new Thread(threadTickListener);
             tTick.Start();
-            Application.DoEvents();
             tTelemetry = new Thread(threadTelemetryListener);
             tTelemetry.Start();
-            Application.DoEvents();
             tHttp = new Thread(threadHttpListener);
             tHttp.Start();
-            Application.DoEvents();
             tRedirector = new Thread(threadRedirectorListener);
             tRedirector.Start();
-            Application.DoEvents();
             tMainServer = new Thread(threadMainServerListener);
             tMainServer.Start();
             if (!Config.GetBoolean("AlwaysSkipHostsCheck") && !silentStart && Frontend.IsRedirectionActive())
             {
-                string msg = "PSE has detected valid redirection entries in the system's hosts file.\n\n";
-                msg += "Would you like to deactivate redirection now?";
-                if (MessageBox.Show(msg, "Startup check", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
-                    Frontend.DeactivateRedirection();
+                Frontend.DeactivateRedirection();
             }
             if (isMITM)
             {
-                Logger.Log("Man-in-the-middle (MITM) mode is enabled (command line argument).", Color.Black);
+                Logger.Log("Man-in-the-middle (MITM) mode is enabled (command line argument).", LogColor.Black);
                 Frontend.UpdateMITMMenuState();
             }
         }
         public static void LoadInitialConfig()
         {
-            Logger.Log("Loading Config...", Color.Black);
+            Logger.Log("Loading Config...", LogColor.Black);
             Logger.LogLevel = Convert.ToInt32(Config.FindEntry("LogLevel"));
-            Logger.Log(" Log Level = " + Logger.LogLevel, Color.Black);
+            Logger.Log(" Log Level = " + Logger.LogLevel, LogColor.Black);
             Frontend.UpdateLogLevelMenu();
             NAT_Type = Convert.ToInt32(Config.FindEntry("NATType"));
-            Logger.Log(" NAT Type = " + NAT_Type, Color.Black);
+            Logger.Log(" NAT Type = " + NAT_Type, LogColor.Black);
             TimeOutLimit = Convert.ToInt32(Config.FindEntry("TimeOutMs"));
-            Logger.Log(" Time Out Limit = " + TimeOutLimit + "ms", Color.Black);
+            Logger.Log(" Time Out Limit = " + TimeOutLimit + "ms", LogColor.Black);
             RWTimeout = Convert.ToInt32(Config.FindEntry("RWTimeout"));
-            Logger.Log(" Read/Write Time Out Limit = " + RWTimeout + "ms", Color.Black);
-            Logger.Log(" Bind IP = " + Config.FindEntry("IP"), Color.Black);
-            Logger.Log(" Redirect IP = " + Config.FindEntry("RedirectIP"), Color.Black);
-            Logger.Log(" MITM Target IP = " + Config.FindEntry("TargetIP"), Color.Black);
-            Logger.Log(" Live BINI = " + GetLiveBINI().Substring(loc.Length), Color.Black);
+            Logger.Log(" Read/Write Time Out Limit = " + RWTimeout + "ms", LogColor.Black);
+            Logger.Log(" Bind IP = " + Config.FindEntry("IP"), LogColor.Black);
+            Logger.Log(" Redirect IP = " + Config.FindEntry("RedirectIP"), LogColor.Black);
+            Logger.Log(" MITM Target IP = " + Config.FindEntry("TargetIP"), LogColor.Black);
+            Logger.Log(" Live BINI = " + GetLiveBINI().Substring(loc.Length), LogColor.Black);
             ignoreTLKLangCode = Config.GetBoolean("IgnoreTLKLanguageCode");
             if(ignoreTLKLangCode)
-                Logger.Log(" Live TLK = " + GetLiveTLK().Substring(loc.Length) + " (ignoring language code)", Color.Black);
+                Logger.Log(" Live TLK = " + GetLiveTLK().Substring(loc.Length) + " (ignoring language code)", LogColor.Black);
             else
-                Logger.Log(" Default TLK = " + GetLiveTLK().Substring(loc.Length), Color.Black);
-            Logger.Log("Configuration loaded", Color.Black);
+                Logger.Log(" Default TLK = " + GetLiveTLK().Substring(loc.Length), LogColor.Black);
+            Logger.Log("Configuration loaded", LogColor.Black);
         }
 
         public static void Stop()
@@ -116,10 +109,7 @@ namespace ME3Server_WV
             }
             if (!Config.GetBoolean("AlwaysSkipHostsCheck") && !silentExit && Frontend.IsRedirectionActive())
             {
-                string msg = "You're leaving PSE, but there are valid redirection entries in the system's hosts file.\n\n";
-                msg += "Would you like to deactivate redirection before exiting?";
-                if (MessageBox.Show(msg, "Exit check", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
-                    Frontend.DeactivateRedirection();
+                Frontend.DeactivateRedirection();
             }
         }
 
@@ -134,7 +124,7 @@ namespace ME3Server_WV
         }
         public static void threadTelemetryListener(object objs)
         {
-            Logger.Log("[Telemetry Listener] Starting...", Color.Black);
+            Logger.Log("[Telemetry Listener] Starting...", LogColor.Black);
             try
             {
                 string IP = Config.FindEntry("IP");
@@ -143,12 +133,12 @@ namespace ME3Server_WV
                 else
                     TelemetryListener = new TcpListener(IPAddress.Parse(IP), 9988);
                 TelemetryListener.Start();
-                Logger.Log("[Telemetry Listener] Started listening on " + EndpointToString(TelemetryListener.LocalEndpoint), Color.Black);
+                Logger.Log("[Telemetry Listener] Started listening on " + EndpointToString(TelemetryListener.LocalEndpoint), LogColor.Black);
                 int counter = 0;
                 while (!exitnow)
                 {
                     TcpClient tcpClient = TelemetryListener.AcceptTcpClient();
-                    Logger.Log("[Telemetry Listener] New client connected", Color.DarkGreen);
+                    Logger.Log("[Telemetry Listener] New client connected", LogColor.DarkGreen);
                     Stream clientStream = tcpClient.GetStream();
                     Thread tHandler = new Thread(threadTelemetryHandler);
                     TelemetryHandlerStruct h = new TelemetryHandlerStruct();
@@ -160,13 +150,13 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Telemetry Listener] Crashed:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Telemetry Listener] Crashed:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         public static void threadTelemetryHandler(object objs)
         {
             TelemetryHandlerStruct h = (TelemetryHandlerStruct)objs;
-            Logger.Log("[Telemetry Handler " + h.ID + "] Client handler started", Color.Black);
+            Logger.Log("[Telemetry Handler " + h.ID + "] Client handler started", LogColor.Black);
             NetworkStream clientStream = (NetworkStream)h.stream;
             try
             {
@@ -196,19 +186,19 @@ namespace ME3Server_WV
                                         foreach (byte b in buff3)
                                             content += (char)b;
                                     }
-                        Logger.Log("[Telemetry Handler " + h.ID + "] Received data, len = " + buff.Length, Color.Blue);
-                        Logger.Log("[Telemetry Handler " + h.ID + "] Content :\n" + buff.Length + content.Replace("/", "\n"), Color.Gray, 5);
+                        Logger.Log("[Telemetry Handler " + h.ID + "] Received data, len = " + buff.Length, LogColor.Blue);
+                        Logger.Log("[Telemetry Handler " + h.ID + "] Content :\n" + buff.Length + content.Replace("/", "\n"), LogColor.Gray, 5);
                     }
                     if (!SocketConnected(h.tcpClient.Client))
                     {
-                        Logger.Log("[Telemetry Handler " + h.ID + "] Client handler stopped: disconnection", Color.Black);
+                        Logger.Log("[Telemetry Handler " + h.ID + "] Client handler stopped: disconnection", LogColor.Black);
                         break;
                     }
                 }
             }
             catch (Exception e)
             {
-                Logger.Log("[Telemetry Handler " + h.ID + "] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Telemetry Handler " + h.ID + "] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         public static bool SocketConnected(Socket s)
@@ -232,7 +222,7 @@ namespace ME3Server_WV
         }
         public static void threadHttpListener(object objs)
         {
-            Logger.Log("[Http Listener] Starting...", Color.Black);
+            Logger.Log("[Http Listener] Starting...", LogColor.Black);
             try
             {
                 string IP = Config.FindEntry("IP");
@@ -241,7 +231,7 @@ namespace ME3Server_WV
                 else
                     HttpListener = new TcpListener(IPAddress.Parse(IP), 8088);
                 HttpListener.Start();
-                Logger.Log("[Http Listener] Started listening on " + EndpointToString(HttpListener.LocalEndpoint), Color.Black);
+                Logger.Log("[Http Listener] Started listening on " + EndpointToString(HttpListener.LocalEndpoint), LogColor.Black);
                 int counter = 0;
                 while (!exitnow)
                 {
@@ -255,13 +245,13 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Http Listener] Crashed:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Http Listener] Crashed:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         public static void threadHttpHandler(object objs)
         {            
             HttpHandlerStruct h = (HttpHandlerStruct)objs;
-            Logger.Log("[Http Client Handler " + h.ID + "] got request " + EndpointToString(HttpListener.LocalEndpoint), Color.Green, 5);
+            Logger.Log("[Http Client Handler " + h.ID + "] got request " + EndpointToString(HttpListener.LocalEndpoint), LogColor.DarkGreen, 5);
             NetworkStream clientStream = h.stream;
             try
             {
@@ -290,7 +280,7 @@ namespace ME3Server_WV
                             string fullfilename = Path.Combine(loc, "http" + Path.DirectorySeparatorChar + filename);
                             if (!File.Exists(fullfilename))
                             {
-                                Logger.Log("[Http Handler] Request failed: " + res + "\nFile not found: " + filename, Color.Red);
+                                Logger.Log("[Http Handler] Request failed: " + res + "\nFile not found: " + filename, LogColor.Red);
                                 HandleGaW_SendResponseToClient(clientStream, CreateHttpHeader(0, 404));
                                 clientStream.Close();
                                 return;
@@ -304,7 +294,7 @@ namespace ME3Server_WV
                             resbuff2.AddRange(resbuff);
                             clientStream.Write(resbuff2.ToArray(), 0, resbuff2.Count);
                             clientStream.Flush();
-                            Logger.Log("[Http Handler] Request OK: " + res, Color.DarkBlue);
+                            Logger.Log("[Http Handler] Request OK: " + res, LogColor.DarkBlue);
                             clientStream.Close();
                             return;
                         }
@@ -314,16 +304,16 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Http Handler] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Http Handler] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         public static void HandleGaW(string request, NetworkStream clientStream)
         {
-            Logger.Log("[Http Handler][GaW] Request: " + request, Color.DarkGoldenrod, 3);
+            Logger.Log("[Http Handler][GaW] Request: " + request, LogColor.Orange, 3);
             string[] s = request.Split('/');
             if (s.Length < 2)
             {
-                Logger.Log("[Http Handler][GaW] Bad request: " + request, Color.DarkBlue);
+                Logger.Log("[Http Handler][GaW] Bad request: " + request, LogColor.DarkBlue);
                 string badreqResponse = CreateHttpHeader(0, 400);
                 HandleGaW_SendResponseToClient(clientStream, badreqResponse);
                 return;
@@ -361,10 +351,10 @@ namespace ME3Server_WV
                     break;
             }
             if (handled)
-                Logger.Log("[Http Handler][GaW] " + s[0] + "/" + s[1] + " - " + playername, Color.DarkBlue);
+                Logger.Log("[Http Handler][GaW] " + s[0] + "/" + s[1] + " - " + playername, LogColor.DarkBlue);
             else
             {
-                Logger.Log("[Http Handler][GaW] Unsupported request: " + s[0] + "/" + s[1], Color.DarkBlue);
+                Logger.Log("[Http Handler][GaW] Unsupported request: " + s[0] + "/" + s[1], LogColor.DarkBlue);
                 string unsupResponse = CreateHttpHeader(0, 501);
                 HandleGaW_SendResponseToClient(clientStream, unsupResponse); 
             }
@@ -389,7 +379,7 @@ namespace ME3Server_WV
         }
         public static void threadTickListener(object objs)
         {
-            Logger.Log("[Tick Listener] Starting...", Color.Black);
+            Logger.Log("[Tick Listener] Starting...", LogColor.Black);
             try
             {
                 string IP = Config.FindEntry("IP");
@@ -398,12 +388,12 @@ namespace ME3Server_WV
                 else
                     TickListener = new TcpListener(IPAddress.Parse(IP), 8999);
                 TickListener.Start();
-                Logger.Log("[Tick Listener] Started listening on " + EndpointToString(TickListener.LocalEndpoint), Color.Black);
+                Logger.Log("[Tick Listener] Started listening on " + EndpointToString(TickListener.LocalEndpoint), LogColor.Black);
                 int counter = 0;
                 while (!exitnow)
                 {
                     TcpClient tcpClient = TickListener.AcceptTcpClient();
-                    Logger.Log("[Tick Listener] New client connected", Color.DarkGreen);
+                    Logger.Log("[Tick Listener] New client connected", LogColor.DarkGreen);
                     Stream clientStream = tcpClient.GetStream();
                     Thread tHandler = new Thread(threadTickHandler);
                     TickHandlerStruct h = new TickHandlerStruct();
@@ -414,13 +404,13 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Tick Listener] Crashed:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Tick Listener] Crashed:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         public static void threadTickHandler(object objs)
         {
             TickHandlerStruct h = (TickHandlerStruct)objs;
-            Logger.Log("[Tick Handler " + h.ID + "] Client handler started", Color.Black);
+            Logger.Log("[Tick Handler " + h.ID + "] Client handler started", LogColor.Black);
             Stream clientStream = h.stream;
             try
             {
@@ -433,7 +423,7 @@ namespace ME3Server_WV
                         m.WriteByte((byte)byteread);
                     if (m.Length != 0)
                     {
-                        Logger.Log("[Tick Handler " + h.ID + "] Received request data, len = " + m.Length + "\n" + Blaze.HexDump(m.ToArray()), Color.Blue);
+                        Logger.Log("[Tick Handler " + h.ID + "] Received request data, len = " + m.Length + "\n" + Blaze.HexDump(m.ToArray()), LogColor.Blue);
                         File.WriteAllBytes(loc + "logs" + Path.DirectorySeparatorChar + (counter++) + "Tick.bin", m.ToArray());
                         clientStream.Flush();
                     }
@@ -441,13 +431,13 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Tick Handler " + h.ID + "] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Tick Handler " + h.ID + "] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
 #endregion
 
 #region Redirector
-        public static X509Certificate2 RedirectorCert = new X509Certificate2(Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar + "cert" + Path.DirectorySeparatorChar + "redirector.pfx", "123456");
+        public static X509Certificate2 RedirectorCert = new X509Certificate2(AppContext.BaseDirectory + "cert" + Path.DirectorySeparatorChar + "redirector.pfx", "123456");
         public static TcpListener RedirectorListener;
         public static Thread tRedirector;
         public struct RedirectorHandlerStruct
@@ -458,7 +448,7 @@ namespace ME3Server_WV
         }
         public static void threadRedirectorListener(object objs)
         {
-            Logger.Log("[Redirector] Starting...", Color.Black);            
+            Logger.Log("[Redirector] Starting...", LogColor.Black);            
             try
             {
                 string IP = Config.FindEntry("IP");
@@ -467,12 +457,12 @@ namespace ME3Server_WV
                 else
                     RedirectorListener = new TcpListener(IPAddress.Parse(IP), 42130);
                 RedirectorListener.Start();
-                Logger.Log("[Redirector] Started listening on " + EndpointToString(RedirectorListener.LocalEndpoint), Color.Black);
+                Logger.Log("[Redirector] Started listening on " + EndpointToString(RedirectorListener.LocalEndpoint), LogColor.Black);
                 int counter = 0;
                 while (!exitnow)
                 {
                     TcpClient tcpClient = RedirectorListener.AcceptTcpClient();
-                    Logger.Log("[Redirector] New client connected", Color.DarkGreen);
+                    Logger.Log("[Redirector] New client connected", LogColor.DarkGreen);
                     Thread tHandler = new Thread(threadRedirectorClientHandler);
                     RedirectorHandlerStruct h = new RedirectorHandlerStruct();
                     h.stream = tcpClient.GetStream();
@@ -484,13 +474,13 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Redirector] Crashed:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Redirector] Crashed:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         public static void threadRedirectorClientHandler(object objs)
         {
             RedirectorHandlerStruct h = (RedirectorHandlerStruct)objs;
-            Logger.Log("[Redirector Handler " + h.ID + "] Client handler started", Color.Black);
+            Logger.Log("[Redirector Handler " + h.ID + "] Client handler started", LogColor.Black);
             NetworkStream clientStream = h.stream;
             try
             {
@@ -504,7 +494,7 @@ namespace ME3Server_WV
                         Blaze.Packet p = Blaze.FetchAllBlazePackets(new MemoryStream(clientRequest))[0];
                         if (p.Component == 0x5 && p.Command == 0x1)
                         {
-                            Logger.Log("[Redirector Handler " + h.ID + "] Send redirection to client => " + ((IPEndPoint)h.tcpClient.Client.RemoteEndPoint).ToString(), Color.Blue);
+                            Logger.Log("[Redirector Handler " + h.ID + "] Send redirection to client => " + ((IPEndPoint)h.tcpClient.Client.RemoteEndPoint).ToString(), LogColor.Blue);
                             List<Blaze.Tdf> Result = new List<Blaze.Tdf>();
                             List<Blaze.Tdf> VALU = new List<Blaze.Tdf>();
                             VALU.Add(Blaze.TdfString.Create("HOST", Config.FindEntry("REDIHOST")));
@@ -529,7 +519,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Redirector Handler " + h.ID + "] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Redirector Handler " + h.ID + "] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
 #endregion
@@ -539,7 +529,7 @@ namespace ME3Server_WV
         public static Thread tMainServer;
         public static void threadMainServerListener(object objs)
         {
-            Logger.Log("[Main Server] Starting...", Color.Black);
+            Logger.Log("[Main Server] Starting...", LogColor.Black);
             try
             {
                 string IP = Config.FindEntry("IP");
@@ -548,12 +538,12 @@ namespace ME3Server_WV
                 else
                     MainServerListener = new TcpListener(IPAddress.Parse(IP), 14219);
                 MainServerListener.Start();
-                Logger.Log("[Main Server] Started listening on " + EndpointToString(MainServerListener.LocalEndpoint), Color.Black);
+                Logger.Log("[Main Server] Started listening on " + EndpointToString(MainServerListener.LocalEndpoint), LogColor.Black);
                 int counter = 0;
                 while (!exitnow)
                 {
                     TcpClient tcpClient = MainServerListener.AcceptTcpClient();
-                    Logger.Log("[Main Server] New client connected", Color.DarkGreen);
+                    Logger.Log("[Main Server] New client connected", LogColor.DarkGreen);
                     Thread tHandler = new Thread(threadMainServerClientHandler);
                     Player.PlayerInfo player = new Player.PlayerInfo(counter++, tcpClient, tcpClient.GetStream());
                     Player.AllPlayers.Add(player);
@@ -562,24 +552,24 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server] Crashed:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server] Crashed:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         public static void threadMainServerClientHandler(object obj)
         {
             Player.PlayerInfo player = (Player.PlayerInfo)obj;
             NetworkStream clientStream = player.ClientStream;
-            Logger.Log("[Main Server Handler " + player.ID + "] Client handler started", Color.Black);
+            Logger.Log("[Main Server Handler " + player.ID + "] Client handler started", LogColor.Black);
             TcpClient target = null;
             SslStream targetstream = null;
             if (isMITM)
             {
                 target = new TcpClient(Config.FindEntry("TargetIP"), 14219);
-                Logger.Log("[Main Server Handler " + player.ID + "] Connected to target", Color.Blue);
+                Logger.Log("[Main Server Handler " + player.ID + "] Connected to target", LogColor.Blue);
                 targetstream = new SslStream(target.GetStream(), true, new RemoteCertificateValidationCallback(ValidateAlways), null);
-                Logger.Log("[Main Server Handler " + player.ID + "] Established SSL", Color.Blue);
+                Logger.Log("[Main Server Handler " + player.ID + "] Established SSL", LogColor.Blue);
                 targetstream.AuthenticateAsClient("383933-gosprapp396.ea.com");
-                Logger.Log("[Main Server Handler " + player.ID + "] Authenticated as client", Color.Blue);
+                Logger.Log("[Main Server Handler " + player.ID + "] Authenticated as client", LogColor.Blue);
             }
             try
             {
@@ -594,11 +584,11 @@ namespace ME3Server_WV
                     if (clientRequest.Length >= 0xC)
                     {
                         List<Blaze.Packet> packets = Blaze.FetchAllBlazePackets(new MemoryStream(clientRequest));
-                        Logger.Log("[Main Server Handler " + player.ID + "] Received request data, len = " + clientRequest.Length, Color.Blue);
+                        Logger.Log("[Main Server Handler " + player.ID + "] Received request data, len = " + clientRequest.Length, LogColor.Blue);
                         // TODO somewhere here the quit command is missing (User Sessions Component : updateExtendedDataAttribute), or maybe even another unkown command
                         foreach (Blaze.Packet p in packets)
                         {
-                            Logger.Log("[<-][INFO] " + Blaze.PacketToDescriber(p), Color.DarkGray, 3);
+                            Logger.Log("[<-][INFO] " + Blaze.PacketToDescriber(p), LogColor.Gray, 3);
                             try
                             {
                                 List<Blaze.Tdf> content = Blaze.ReadPacketContent(p);
@@ -618,7 +608,7 @@ namespace ME3Server_WV
                     }
                     else if(clientRequest.Length > 0)
                     {
-                        Logger.Log("[ERROR] Got too short request from client! len=" + clientRequest.Length + "\n" + Blaze.HexDump(clientRequest), Color.Red);
+                        Logger.Log("[ERROR] Got too short request from client! len=" + clientRequest.Length + "\n" + Blaze.HexDump(clientRequest), LogColor.Red);
                     }
                     // Detect if the TCP connection has been closed/reset by the client
                     // This catches the case where RST purges the buffer and we get nothing
@@ -631,13 +621,13 @@ namespace ME3Server_WV
                             System.Net.Sockets.Socket sock = player.Client.Client;
                             if (sock != null && sock.Poll(0, System.Net.Sockets.SelectMode.SelectRead) && sock.Available == 0)
                             {
-                                Logger.Log("[CONNECTION LOST] Client connection closed/reset detected for player " + player.ID, Color.OrangeRed);
-                                Logger.Log("[CONNECTION LOST] This happened " + (player.PingTimer.ElapsedMilliseconds / 1000.0).ToString("F1") + "s after last communication", Color.OrangeRed);
+                                Logger.Log("[CONNECTION LOST] Client connection closed/reset detected for player " + player.ID, LogColor.Orange);
+                                Logger.Log("[CONNECTION LOST] This happened " + (player.PingTimer.ElapsedMilliseconds / 1000.0).ToString("F1") + "s after last communication", LogColor.Orange);
                                 try
                                 {
                                     var activeGame = GameManager.FindByPlayer(player);
                                     if (activeGame != null)
-                                        Logger.Log("[CONNECTION LOST] Player was in game GID=0x" + activeGame.ID.ToString("X") + " GAMESTATE=" + activeGame.GAMESTATE, Color.OrangeRed);
+                                        Logger.Log("[CONNECTION LOST] Player was in game GID=0x" + activeGame.ID.ToString("X") + " GAMESTATE=" + activeGame.GAMESTATE, LogColor.Orange);
                                 }
                                 catch (Exception) { }
                                 player.SetActiveState(false);
@@ -661,7 +651,7 @@ namespace ME3Server_WV
                             targetstream.Write(Blaze.CreatePacket(9, 0xB, 0, 0, 0x0, listTDF));
                             targetstream.Flush();
                         }
-                        Logger.Log("[Import player settings] Concluded. Packets sent: " + i, Color.Purple);
+                        Logger.Log("[Import player settings] Concluded. Packets sent: " + i, LogColor.Magenta);
                         importKeys = null;
                         importValues = null;
                     }
@@ -677,16 +667,16 @@ namespace ME3Server_WV
                         }
                         if (targetResponse.Length >= 0xC)
                         {
-                            Logger.Log("[Main Server Handler " + player.ID + "] Received response data, len = " + targetResponse.Length, Color.Blue);
+                            Logger.Log("[Main Server Handler " + player.ID + "] Received response data, len = " + targetResponse.Length, LogColor.Blue);
                             List<Blaze.Packet> packets = Blaze.FetchAllBlazePackets(new MemoryStream(targetResponse));
                             foreach (Blaze.Packet p in packets)
                             {
                                 if (bRecordPlayerSettings && Blaze.PacketToDescriber(p).Contains("userSettingsLoadAll"))
                                     ExportUserSettings(p);
-                                Logger.Log("[->][INFO] " + Blaze.PacketToDescriber(p), Color.DarkGray, 3);
+                                Logger.Log("[->][INFO] " + Blaze.PacketToDescriber(p), LogColor.Gray, 3);
                                 List<Blaze.Tdf> content = Blaze.ReadPacketContent(p);
                                 foreach (Blaze.Tdf tdf in content)
-                                    Logger.Log("[->][INFO]  " + tdf.Label + " : " + tdf.Type, Color.Gray, 5);
+                                    Logger.Log("[->][INFO]  " + tdf.Label + " : " + tdf.Type, LogColor.Gray, 5);
                             }
                             Logger.DumpPacket(targetResponse, player);
                             clientStream.Write(targetResponse, 0, targetResponse.Length);
@@ -694,15 +684,15 @@ namespace ME3Server_WV
                         }
                     }
                 }
-                Logger.Log("[Main Server Handler " + player.ID + "] Player Timed Out (no data received for " + (player.PingTimer.ElapsedMilliseconds / 1000) + "s)", Color.Red);
-                Logger.Log("[DIAG] Last known game state for player " + player.ID + ": checking active game...", Color.Yellow);
+                Logger.Log("[Main Server Handler " + player.ID + "] Player Timed Out (no data received for " + (player.PingTimer.ElapsedMilliseconds / 1000) + "s)", LogColor.Red);
+                Logger.Log("[DIAG] Last known game state for player " + player.ID + ": checking active game...", LogColor.Yellow);
                 try
                 {
                     var activeGame = GameManager.FindByPlayer(player);
                     if (activeGame != null)
-                        Logger.Log("[DIAG] Player was in game GID=0x" + activeGame.ID.ToString("X") + " GAMESTATE=" + activeGame.GAMESTATE, Color.Yellow);
+                        Logger.Log("[DIAG] Player was in game GID=0x" + activeGame.ID.ToString("X") + " GAMESTATE=" + activeGame.GAMESTATE, LogColor.Yellow);
                     else
-                        Logger.Log("[DIAG] Player had no active game", Color.Yellow);
+                        Logger.Log("[DIAG] Player had no active game", LogColor.Yellow);
                 }
                 catch (Exception) { }
                 player.SetActiveState(false);
@@ -711,7 +701,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         private static void ExportUserSettings(Blaze.Packet p)
@@ -733,7 +723,7 @@ namespace ME3Server_WV
                 // if SMAP not found, bail out
                 if (SMAP_field == null)
                 {
-                    Logger.Log("[Record player settings] Field SMAP is missing.", Color.Red);
+                    Logger.Log("[Record player settings] Field SMAP is missing.", LogColor.Red);
                     return; // Exit Try
                 }
                 List<string> listKeys = (List<string>)SMAP_field.List1;
@@ -750,20 +740,20 @@ namespace ME3Server_WV
                     listLines.Add(listKeys[i] + "=" + listValues[i]);
                 }
                 System.IO.File.WriteAllLines(loc + "RecordedPlayerSettings.txt", listLines);
-                Logger.Log("[Record player settings] Dummy player file created: RecordedPlayerSettings.txt", Color.Purple);
+                Logger.Log("[Record player settings] Dummy player file created: RecordedPlayerSettings.txt", LogColor.Magenta);
             }
             catch (Exception ex)
             {
-                Logger.Log("[Record player settings] " + GetExceptionMessage(ex), Color.Red);
+                Logger.Log("[Record player settings] " + GetExceptionMessage(ex), LogColor.Red);
             }
         }
         public static void MainServerHandler(Player.PlayerInfo player, byte[] buff)
         {
-                Logger.Log("[MainServerHandler called]", Color.Brown);
+                Logger.Log("[MainServerHandler called]", LogColor.Orange);
                 List<Blaze.Packet> packets = Blaze.FetchAllBlazePackets(new MemoryStream(buff));
                 foreach (Blaze.Packet p in packets)
                 {
-                    Logger.Log("---> Client called Component: " + p.Component + " with Command: " + p.Command + "\n", Color.Purple, 5);
+                    Logger.Log("---> Client called Component: " + p.Component + " with Command: " + p.Command + "\n", LogColor.Magenta, 5);
                     switch (p.Component)
                     {
                         case 0x1:
@@ -794,8 +784,8 @@ namespace ME3Server_WV
                             HandleComponent_7802(player, p);
                             break;
                         default:
-                            Logger.Log("[Implementation totally missing] Component: 0x" + p.Component.ToString("X") + " Command: 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ")", Color.DarkRed);
-                            Logger.Log("[DIAG] Sending empty response for unhandled component to prevent client hang", Color.DarkOrange);
+                            Logger.Log("[Implementation totally missing] Component: 0x" + p.Component.ToString("X") + " Command: 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ")", LogColor.DarkRed);
+                            Logger.Log("[DIAG] Sending empty response for unhandled component to prevent client hang", LogColor.Orange);
                             try
                             {
                                 List<Blaze.Tdf> reqContent = Blaze.ReadPacketContent(p);
@@ -893,7 +883,7 @@ namespace ME3Server_WV
                         HandleComponent_1_Command_AA(player, p);
                         break;
                     case 0x21: // hasEntitlement
-                        Logger.Log("[DIAG][Auth] hasEntitlement check received", Color.Cyan);
+                        Logger.Log("[DIAG][Auth] hasEntitlement check received", LogColor.Cyan);
                         try
                         {
                             List<Blaze.Tdf> entContent = Blaze.ReadPacketContent(p);
@@ -905,14 +895,14 @@ namespace ME3Server_WV
                         SendEmpty(player, p, 0x1000);
                         break;
                     default:
-                        Logger.Log("[Implementation partially missing] Component: 0x" + p.Component.ToString("X") + " Command: 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ") - sending empty response", Color.DarkRed);
+                        Logger.Log("[Implementation partially missing] Component: 0x" + p.Component.ToString("X") + " Command: 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ") - sending empty response", LogColor.DarkRed);
                         SendEmpty(player, p, 0x1000);
                         break;
                 }
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:*] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:*] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
 
         }
@@ -921,7 +911,7 @@ namespace ME3Server_WV
             List<Blaze.Tdf> content = Blaze.ReadPacketContent(p);
             if (content.Count != 3)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:32] Error: HandleComponent_1_Command_32: Count != 3 ", Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:32] Error: HandleComponent_1_Command_32: Count != 3 ", LogColor.Red);
                 return;
             }
             else
@@ -929,7 +919,7 @@ namespace ME3Server_WV
                 Blaze.TdfString tdfs = (Blaze.TdfString)content[0];
                 if (tdfs.Label != "AUTH")
                 {
-                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:32] Error: HandleComponent_1_Command_32: AUTH not found ", Color.Red);
+                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:32] Error: HandleComponent_1_Command_32: AUTH not found ", LogColor.Red);
                     return;
                 }
                 else
@@ -940,7 +930,7 @@ namespace ME3Server_WV
                 Blaze.TdfInteger tdfi = (Blaze.TdfInteger)content[1];
                 if (tdfi.Label != "PID ")
                 {
-                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:32] Error: HandleComponent_1_Command_32: PID not found ", Color.Red);
+                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:32] Error: HandleComponent_1_Command_32: PID not found ", LogColor.Red);
                     return;
                 }
                 else
@@ -968,7 +958,7 @@ namespace ME3Server_WV
                             {
                                 player.Name = parts[1].Trim();
                                 player.pathtoprofile = file;
-                                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:32] (silentLogin) Name=" + player.Name + ", PID=0x" + player.PlayerID.ToString("X"), Color.DarkOrange);
+                                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:32] (silentLogin) Name=" + player.Name + ", PID=0x" + player.PlayerID.ToString("X"), LogColor.Orange);
                                 player.Settings = new List<Player.PlayerInfo.SettingEntry>();
                                 for (int j = i + 1; j < lines.Length; j++)
                                 {
@@ -987,7 +977,7 @@ namespace ME3Server_WV
 
                     if(!found)
                     {
-                        Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:32] Error: HandleComponent_1_Command_32: Player for AUTH not found! ", Color.Orange);
+                        Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:32] Error: HandleComponent_1_Command_32: Player for AUTH not found! ", LogColor.Orange);
                         SendLoginErrorPacket(player, p, LoginErrorCode.WRONGPASSWORD);
                         return;
                     }
@@ -1000,7 +990,7 @@ namespace ME3Server_WV
             List<Blaze.Tdf> content = Blaze.ReadPacketContent(p);
             if (content.Count != 2)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:98] Error: HandleComponent_1_Command_98: Count != 2 ", Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:98] Error: HandleComponent_1_Command_98: Count != 2 ", LogColor.Red);
                 return;
             }
             else
@@ -1008,7 +998,7 @@ namespace ME3Server_WV
                 Blaze.TdfString tdfs = (Blaze.TdfString)content[0];
                 if (tdfs.Label != "AUTH")
                 {
-                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:98] Error: HandleComponent_1_Command_98: AUTH not found ", Color.Red);
+                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:98] Error: HandleComponent_1_Command_98: AUTH not found ", LogColor.Red);
                     return;
                 }
                 else
@@ -1019,7 +1009,7 @@ namespace ME3Server_WV
                     player.PlayerID = ConvertHex(Config.FindEntry("OriginPID")) + player.ID;
                     player.UserID = ConvertHex(Config.FindEntry("OriginUID")) + player.ID;
                     player.Update = true;
-                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:98] (originLogin) Name=" + player.Name + ", PID=0x" + player.PlayerID.ToString("X"), Color.DarkOrange);
+                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:98] (originLogin) Name=" + player.Name + ", PID=0x" + player.PlayerID.ToString("X"), LogColor.Orange);
                     CreateAuthPacket01(player, p);
                     CreateAuthPacket02(player, p);
                 }
@@ -1030,7 +1020,7 @@ namespace ME3Server_WV
             List<Blaze.Tdf> content = Blaze.ReadPacketContent(p);
             if (content.Count != 3)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:AA] Error: HandleComponent_1_Command_AA: Count != 3 ", Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:AA] Error: HandleComponent_1_Command_AA: Count != 3 ", LogColor.Red);
                 return;
             }
             else
@@ -1038,7 +1028,7 @@ namespace ME3Server_WV
                 Blaze.TdfString tdfs = (Blaze.TdfString)content[0];
                 if (tdfs.Label != "GTAG")
                 {
-                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:AA] Error: HandleComponent_1_Command_AA: GTAG not found ", Color.Red);
+                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:AA] Error: HandleComponent_1_Command_AA: GTAG not found ", LogColor.Red);
                     return;
                 }
                 else
@@ -1049,7 +1039,7 @@ namespace ME3Server_WV
                     player.PlayerID = ConvertHex(Config.FindEntry("OriginPID")) + player.ID;
                     player.UserID = ConvertHex(Config.FindEntry("OriginUID")) + player.ID;
                     player.Update = true;
-                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:AA] (xboxLogin) Name=" + player.Name + ", PID=0x" + player.PlayerID.ToString("X"), Color.DarkOrange);
+                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:AA] (xboxLogin) Name=" + player.Name + ", PID=0x" + player.PlayerID.ToString("X"), LogColor.Orange);
                     CreateAuthPacket01(player, p);
                     CreateAuthPacket02(player, p);
                 }
@@ -1060,7 +1050,7 @@ namespace ME3Server_WV
             List<Blaze.Tdf> content = Blaze.ReadPacketContent(p);
             if (content.Count != 5)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:28] Error: HandleComponent_1_Command_28: Count != 5 ", Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:28] Error: HandleComponent_1_Command_28: Count != 5 ", LogColor.Red);
                 return;
             }
             string playername = ((Blaze.TdfString)content[1]).Value.Trim();
@@ -1112,7 +1102,7 @@ namespace ME3Server_WV
                 }
             }
             player.Update = true;
-            Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:28] (login) Name=" + player.Name + ", PID=0x" + player.PlayerID.ToString("X"), Color.DarkOrange);
+            Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:28] (login) Name=" + player.Name + ", PID=0x" + player.PlayerID.ToString("X"), LogColor.Orange);
             CreateAuthPacket01_28(player, p); // Direct response
         }
         public static void CheckNamePassword(string PlayerName, string Password, out string PlayerFile, out bool ValidLogin, out ME3PlayerHeader Header)
@@ -1142,18 +1132,18 @@ namespace ME3Server_WV
             List<Blaze.Tdf> content = Blaze.ReadPacketContent(p);
             if (content.Count != 1)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:6E] Error: HandleComponent_1_Command_6E: Count != 1 ", Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:6E] Error: HandleComponent_1_Command_6E: Count != 1 ", LogColor.Red);
                 return;
             }
             Blaze.TdfString pnam = (Blaze.TdfString)content[0];
             if (pnam.Label != "PNAM")
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:6E] Error: HandleComponent_1_Command_6E: PNAM not found ", Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:6E] Error: HandleComponent_1_Command_6E: PNAM not found ", LogColor.Red);
                 return;
             }
             if (pnam.Value != player.Name)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:6E] Error: HandleComponent_1_Command_6E: PNAM is invalid ", Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1:6E] Error: HandleComponent_1_Command_6E: PNAM is invalid ", LogColor.Red);
                 return;
             }
             uint t = Blaze.GetUnixTimeStamp();
@@ -1200,7 +1190,7 @@ namespace ME3Server_WV
                                 byte[] stateNotifyBuff = Blaze.CreatePacket(0x4, 0x64, 0, 0x2000, 0, stateNotify);
                                 foreach (Player.PlayerInfo pl in game.AllPlayers)
                                     SendPacket(pl, stateNotifyBuff);
-                                Logger.Log("[DIAG] Broadcast NotifyGameStateChange GSTA=0x" + GSTA.Value.ToString("X") + " to " + game.AllPlayers.Count + " players", Color.Green);
+                                Logger.Log("[DIAG] Broadcast NotifyGameStateChange GSTA=0x" + GSTA.Value.ToString("X") + " to " + game.AllPlayers.Count + " players", LogColor.DarkGreen);
                             }
                         }
                         SendEmpty(player, p, 0x1000);
@@ -1271,7 +1261,7 @@ namespace ME3Server_WV
                         HandleComponent_4_Command_11(player, p);
                         break;
                     default:
-                        Logger.Log("[DIAG][GameManager] Unhandled command 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ") - sending empty response", Color.DarkOrange);
+                        Logger.Log("[DIAG][GameManager] Unhandled command 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ") - sending empty response", LogColor.Orange);
                         try
                         {
                             List<Blaze.Tdf> gmContent = Blaze.ReadPacketContent(p);
@@ -1303,14 +1293,14 @@ namespace ME3Server_WV
                         byte[] notifyBuff = Blaze.CreatePacket(0x4, 0x5A, 0, 0x2000, 0, input);
                         foreach (Player.PlayerInfo pl in game.AllPlayers)
                             SendPacket(pl, notifyBuff);
-                        Logger.Log("[DIAG] Broadcast NotifyPlayerAttribChange for GID=0x" + GID.Value.ToString("X") + " to " + game.AllPlayers.Count + " players", Color.Green);
+                        Logger.Log("[DIAG] Broadcast NotifyPlayerAttribChange for GID=0x" + GID.Value.ToString("X") + " to " + game.AllPlayers.Count + " players", LogColor.DarkGreen);
                     }
                 }
                 SendEmpty(player, p, 0x1000);
             }
             catch (Exception e)
             {
-                Logger.Log("[Handler_4:8] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Handler_4:8] Error:\n" + GetExceptionMessage(e), LogColor.Red);
                 SendEmpty(player, p, 0x1000);
             }
         }
@@ -1336,7 +1326,7 @@ namespace ME3Server_WV
                     notifyContent.Add(Blaze.TdfInteger.Create("GID\0", game.ID));
                     byte[] notifyBuff = Blaze.CreatePacket(0x4, 0x0F, 0, 0x2000, 0, notifyContent);
                     SendPacket(player, notifyBuff);
-                    Logger.Log("[DIAG] Sent NotifyGameCreated for GID=0x" + game.ID.ToString("X"), Color.Green);
+                    Logger.Log("[DIAG] Sent NotifyGameCreated for GID=0x" + game.ID.ToString("X"), LogColor.DarkGreen);
 
                     // Send NotifyGameReportingIdChange (0x4/0x71) to tell the client
                     // what game reporting ID to use when submitting game reports.
@@ -1346,7 +1336,7 @@ namespace ME3Server_WV
                     reportIdNotify.Add(Blaze.TdfInteger.Create("GRID", reportingId));
                     byte[] reportIdBuff = Blaze.CreatePacket(0x4, 0x71, 0, 0x2000, 0, reportIdNotify);
                     SendPacket(player, reportIdBuff);
-                    Logger.Log("[DIAG][GM] Sent NotifyGameReportingIdChange GID=0x" + game.ID.ToString("X") + " GRID=0x" + reportingId.ToString("X"), Color.Green);
+                    Logger.Log("[DIAG][GM] Sent NotifyGameReportingIdChange GID=0x" + game.ID.ToString("X") + " GRID=0x" + reportingId.ToString("X"), LogColor.DarkGreen);
 
                     // Send NotifyGamePlayerStateChange (0x4/0x74) to set player to ActiveConnected.
                     List<Blaze.Tdf> stateNotify = new List<Blaze.Tdf>();
@@ -1355,7 +1345,7 @@ namespace ME3Server_WV
                     stateNotify.Add(Blaze.TdfInteger.Create("STAT", 4));
                     byte[] stateBuff = Blaze.CreatePacket(0x4, 0x74, 0, 0x2000, 0, stateNotify);
                     SendPacket(player, stateBuff);
-                    Logger.Log("[DIAG][GM] Sent NotifyGamePlayerStateChange STAT=4 for player " + player.PlayerID, Color.Green);
+                    Logger.Log("[DIAG][GM] Sent NotifyGamePlayerStateChange STAT=4 for player " + player.PlayerID, LogColor.DarkGreen);
 
                     // Send NotifyPlayerJoinCompleted (0x4/0x1E)
                     List<Blaze.Tdf> joinNotify = new List<Blaze.Tdf>();
@@ -1363,12 +1353,12 @@ namespace ME3Server_WV
                     joinNotify.Add(Blaze.TdfInteger.Create("PID\0", player.PlayerID));
                     byte[] joinBuff = Blaze.CreatePacket(0x4, 0x1E, 0, 0x2000, 0, joinNotify);
                     SendPacket(player, joinBuff);
-                    Logger.Log("[DIAG][GM] Sent NotifyPlayerJoinCompleted for player " + player.PlayerID, Color.Green);
+                    Logger.Log("[DIAG][GM] Sent NotifyPlayerJoinCompleted for player " + player.PlayerID, LogColor.DarkGreen);
                 }
             }
             catch (Exception e)
             {
-                Logger.Log("[Handler_4:F] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Handler_4:F] Error:\n" + GetExceptionMessage(e), LogColor.Red);
                 SendEmpty(player, p, 0x1000);
             }
         }
@@ -1387,7 +1377,7 @@ namespace ME3Server_WV
                     if (tdf.Label == "GID " && tdf is Blaze.TdfInteger)
                         gameId = ((Blaze.TdfInteger)tdf).Value;
                 }
-                Logger.Log("[DIAG][GM] removeGame/destroyGame GID=0x" + gameId.ToString("X"), Color.Magenta);
+                Logger.Log("[DIAG][GM] removeGame/destroyGame GID=0x" + gameId.ToString("X"), LogColor.Magenta);
                 GameManager.GameInfo game = GameManager.FindByGID(gameId);
                 if (game != null)
                 {
@@ -1400,13 +1390,13 @@ namespace ME3Server_WV
                         SendPacket(pl, notifyBuff);
                     game.isActive = false;
                     game.Update = true;
-                    Logger.Log("[DIAG][GM] Game 0x" + game.ID.ToString("X") + " destroyed", Color.Green);
+                    Logger.Log("[DIAG][GM] Game 0x" + game.ID.ToString("X") + " destroyed", LogColor.DarkGreen);
                 }
                 SendEmpty(player, p, 0x1000);
             }
             catch (Exception e)
             {
-                Logger.Log("[Handler_4:9] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Handler_4:9] Error:\n" + GetExceptionMessage(e), LogColor.Red);
                 SendEmpty(player, p, 0x1000);
             }
         }
@@ -1428,7 +1418,7 @@ namespace ME3Server_WV
                     if (tdf.Label == "PID " && tdf is Blaze.TdfInteger)
                         playerId = ((Blaze.TdfInteger)tdf).Value;
                 }
-                Logger.Log("[DIAG][GM] removePlayer GID=0x" + gameId.ToString("X") + " PID=0x" + playerId.ToString("X"), Color.Magenta);
+                Logger.Log("[DIAG][GM] removePlayer GID=0x" + gameId.ToString("X") + " PID=0x" + playerId.ToString("X"), LogColor.Magenta);
                 GameManager.GameInfo game = GameManager.FindByGID(gameId);
                 if (game != null)
                 {
@@ -1460,7 +1450,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Handler_4:11] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Handler_4:11] Error:\n" + GetExceptionMessage(e), LogColor.Red);
                 SendEmpty(player, p, 0x1000);
             }
         }
@@ -1597,14 +1587,14 @@ namespace ME3Server_WV
                         HandleComponent_7_Command_D(player, p);
                         break;
                     default:
-                        Logger.Log("[DIAG][Stats] Unhandled command 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ") - sending empty response", Color.DarkOrange);
+                        Logger.Log("[DIAG][Stats] Unhandled command 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ") - sending empty response", LogColor.Orange);
                         SendEmpty(player, p, 0x1000);
                         break;
                 }
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7:*] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7:*] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         /// <summary>
@@ -1623,7 +1613,7 @@ namespace ME3Server_WV
                     if (tdf.Label == "NAME" && tdf is Blaze.TdfString)
                         groupName = ((Blaze.TdfString)tdf).Value;
                 }
-                Logger.Log("[DIAG][Stats] getStatGroup request for: '" + groupName + "'", Color.Cyan);
+                Logger.Log("[DIAG][Stats] getStatGroup request for: '" + groupName + "'", LogColor.Cyan);
 
                 List<Blaze.Tdf> response = new List<Blaze.Tdf>();
                 response.Add(Blaze.TdfString.Create("NAME", groupName));
@@ -1636,7 +1626,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Handler_7:4] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Handler_7:4] Error:\n" + GetExceptionMessage(e), LogColor.Red);
                 SendEmpty(player, p, 0x1000);
             }
         }
@@ -1673,7 +1663,7 @@ namespace ME3Server_WV
         {
             try
             {
-                Logger.Log("[DIAG][Stats] getKeyScopesMap request", Color.Cyan);
+                Logger.Log("[DIAG][Stats] getKeyScopesMap request", LogColor.Cyan);
                 List<Blaze.Tdf> response = new List<Blaze.Tdf>();
                 // KSMP - Key Scopes Map: a map of scope names to their definitions
                 // Return a minimal valid structure with no key scopes
@@ -1684,7 +1674,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Handler_7:F] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Handler_7:F] Error:\n" + GetExceptionMessage(e), LogColor.Red);
                 SendEmpty(player, p, 0x1000);
             }
         }
@@ -1721,7 +1711,7 @@ namespace ME3Server_WV
                 // If entity ID is still 0, use the player's own PID
                 if (entityId == 0)
                     entityId = player.PlayerID;
-                Logger.Log("[DIAG][Stats] getStatsByGroupAsync request: group='" + groupName + "' entityId=" + entityId + " viewId=" + viewId, Color.Cyan);
+                Logger.Log("[DIAG][Stats] getStatsByGroupAsync request: group='" + groupName + "' entityId=" + entityId + " viewId=" + viewId, LogColor.Cyan);
 
                 // Send response acknowledging the async request
                 List<Blaze.Tdf> response = new List<Blaze.Tdf>();
@@ -1741,7 +1731,7 @@ namespace ME3Server_WV
                     statValues.Add("0"); // default value
                 }
 
-                Logger.Log("[DIAG][Stats] Sending stats for '" + groupName + "': " + statNames.Count + " columns", Color.Green);
+                Logger.Log("[DIAG][Stats] Sending stats for '" + groupName + "': " + statNames.Count + " columns", LogColor.DarkGreen);
 
                 // Send async notification with actual stats data
                 List<Blaze.Tdf> asyncNotify = new List<Blaze.Tdf>();
@@ -1754,7 +1744,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Handler_7:10] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Handler_7:10] Error:\n" + GetExceptionMessage(e), LogColor.Red);
                 SendEmpty(player, p, 0x1000);
             }
         }
@@ -1824,7 +1814,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7:A] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7:A] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         public static void HandleComponent_7_Command_E(Player.PlayerInfo player, Blaze.Packet p)
@@ -1893,7 +1883,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7:E] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7:E] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         public static void HandleComponent_7_Command_12(Player.PlayerInfo player, Blaze.Packet p)
@@ -1912,7 +1902,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7:12] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7:12] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         public static void HandleComponent_7_Command_D(Player.PlayerInfo player, Blaze.Packet p)
@@ -2011,7 +2001,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7:D] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7:D] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
         public static List<Tuple<string, long, int, int>> GetLeaderboard(int type)
@@ -2045,7 +2035,7 @@ namespace ME3Server_WV
                         break;
                     case 0x2:
                         long ms = player.PingTimer.ElapsedMilliseconds;
-                        Logger.Log("[Main Server Handler " + player.ID + "][Handler_9:*] Last Ping Time was : " + (ms / 1000f).ToString() + " seconds", Color.Orange, 3);
+                        Logger.Log("[Main Server Handler " + player.ID + "][Handler_9:*] Last Ping Time was : " + (ms / 1000f).ToString() + " seconds", LogColor.Orange, 3);
                         player.PingTimer.Restart();
                         CreateServerTimePacket(player, p);
                         break;
@@ -2091,7 +2081,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_9:*] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_9:*] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }        
         }
         public static void HandleComponent_9_Command_1(Player.PlayerInfo player, Blaze.Packet p)
@@ -2099,7 +2089,7 @@ namespace ME3Server_WV
             List<Blaze.Tdf> content = Blaze.ReadPacketContent(p);
             if (content.Count != 1)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_9:1] Error: HandleComponent_9_Command_1: Count != 1 ", Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_9:1] Error: HandleComponent_9_Command_1: Count != 1 ", LogColor.Red);
                 return;
             }
             else
@@ -2107,7 +2097,7 @@ namespace ME3Server_WV
                 Blaze.TdfString tdfs = (Blaze.TdfString)content[0];
                 if (tdfs.Label != "CFID")
                 {
-                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_9:1] Error: HandleComponent_9_Command_1: CFID not found ", Color.Red);
+                    Logger.Log("[Main Server Handler " + player.ID + "][Handler_9:1] Error: HandleComponent_9_Command_1: CFID not found ", LogColor.Red);
                     return;
                 }
                 else
@@ -2205,7 +2195,7 @@ namespace ME3Server_WV
                             List1 = new List<string>();
                             List2 = new List<string>();
                             Result.Add(Blaze.TdfDoubleList.Create("CONF", 1, 1, List1, List2, 0));
-                            Logger.Log("[DIAG][Config] fetchClientConfig 'Syndicate' - returning empty CONF", Color.Cyan);
+                            Logger.Log("[DIAG][Config] fetchClientConfig 'Syndicate' - returning empty CONF", LogColor.Cyan);
                             SendPacket(player, Blaze.CreatePacket(p.Component, p.Command, 0, 0x1000, p.ID, Result));
                             break;
                         default:
@@ -2217,7 +2207,7 @@ namespace ME3Server_WV
         }
         public static void HandleLiveTLK(Player.PlayerInfo player, Blaze.Packet p, string lang)
         {
-            //Logger.Log("TLK file requested | language: " + lang, Color.White);
+            //Logger.Log("TLK file requested | language: " + lang, LogColor.White);
             List<string> List1 = new List<string>();
             List<string> List2 = new List<string>();
             List<Blaze.Tdf> Result = new List<Blaze.Tdf>();
@@ -2248,7 +2238,7 @@ namespace ME3Server_WV
         {
             try
             {
-                Logger.Log("[DIAG][Clubs] Command 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ")", Color.Cyan);
+                Logger.Log("[DIAG][Clubs] Command 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ")", LogColor.Cyan);
                 try
                 {
                     List<Blaze.Tdf> reqContent = Blaze.ReadPacketContent(p);
@@ -2267,7 +2257,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_B:*] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_B:*] Error:\n" + GetExceptionMessage(e), LogColor.Red);
                 SendEmpty(player, p, 0x1000);
             }
         }
@@ -2293,7 +2283,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_F:*] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_F:*] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
 
         }
@@ -2346,7 +2336,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_19:*] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_19:*] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
 
         }
@@ -2358,17 +2348,17 @@ namespace ME3Server_WV
                 {
                     case 0x1: // submitGameReport
                     case 0x2: // submitOfflineGameReport
-                        Logger.Log("[DIAG][GameReport] submitGameReport (cmd=0x" + p.Command.ToString("X") + ") received from player " + player.ID, Color.Magenta);
+                        Logger.Log("[DIAG][GameReport] submitGameReport (cmd=0x" + p.Command.ToString("X") + ") received from player " + player.ID, LogColor.Magenta);
                         // Log the full content of the game report request for diagnostics
                         try
                         {
                             List<Blaze.Tdf> reportContent = Blaze.ReadPacketContent(p);
-                            Logger.Log("[DIAG][GameReport] Request content (" + reportContent.Count + " TDFs):", Color.Magenta);
+                            Logger.Log("[DIAG][GameReport] Request content (" + reportContent.Count + " TDFs):", LogColor.Magenta);
                             LogTdfContent(reportContent, "[<-][GameReport]", 0);
                         }
                         catch (Exception ex)
                         {
-                            Logger.Log("[DIAG][GameReport] Failed to parse request content: " + ex.Message, Color.Red);
+                            Logger.Log("[DIAG][GameReport] Failed to parse request content: " + ex.Message, LogColor.Red);
                         }
                         // Find the active game for this player to get the correct GID/GSID
                         long gameId = 0;
@@ -2389,7 +2379,7 @@ namespace ME3Server_WV
                         result.Add(Blaze.TdfInteger.Create("FNL\0", 0));
                         result.Add(Blaze.TdfInteger.Create("GHID", reportingId));
                         result.Add(Blaze.TdfInteger.Create("GRID", reportingId));
-                        Logger.Log("[DIAG][GameReport] Sending GHID=0x" + reportingId.ToString("X") + ", GRID=0x" + reportingId.ToString("X") + " in 0x1C/0x72 notification", Color.Green);
+                        Logger.Log("[DIAG][GameReport] Sending GHID=0x" + reportingId.ToString("X") + ", GRID=0x" + reportingId.ToString("X") + " in 0x1C/0x72 notification", LogColor.DarkGreen);
                         buff = Blaze.CreatePacket(0x1C, 0x72, 0, 0x2000, 0, result);
                         res.Write(buff, 0, buff.Length);
                         SendPacket(player, res.ToArray());
@@ -2397,18 +2387,18 @@ namespace ME3Server_WV
                     case 0x3: // submitGameEvents
                     case 0x64: // submitTrustedMidGameReport
                     case 0x65: // submitTrustedEndGameReport
-                        Logger.Log("[DIAG][GameReport] cmd=0x" + p.Command.ToString("X") + " from player " + player.ID, Color.Magenta);
+                        Logger.Log("[DIAG][GameReport] cmd=0x" + p.Command.ToString("X") + " from player " + player.ID, LogColor.Magenta);
                         SendEmpty(player, p, 0x1000);
                         break;
                     default:
-                        Logger.Log("[DIAG][GameReport] Unhandled cmd=0x" + p.Command.ToString("X") + " from player " + player.ID, Color.DarkOrange);
+                        Logger.Log("[DIAG][GameReport] Unhandled cmd=0x" + p.Command.ToString("X") + " from player " + player.ID, LogColor.Orange);
                         SendEmpty(player, p, 0x1000);
                         break;
                 }
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1C:*] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_1C:*] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
 
         }
@@ -2427,7 +2417,7 @@ namespace ME3Server_WV
                         HandleComponent_7802_14(player, p);
                         break;
                     default:
-                        Logger.Log("[Main Server Handler " + player.ID + "][Handler_7802:*] Unhandled command 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ") - sending empty response", Color.DarkRed);
+                        Logger.Log("[Main Server Handler " + player.ID + "][Handler_7802:*] Unhandled command 0x" + p.Command.ToString("X") + " (" + Blaze.PacketToDescriber(p) + ") - sending empty response", LogColor.DarkRed);
                         try
                         {
                             List<Blaze.Tdf> reqContent = Blaze.ReadPacketContent(p);
@@ -2440,7 +2430,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7802:*] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7802:*] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
 
         }     
@@ -2449,7 +2439,7 @@ namespace ME3Server_WV
             try
             {
                 List<Blaze.Tdf> req = Blaze.ReadPacketContent(p);
-                Logger.Log("[DIAG][7802:5] updateExtendedDataAttribute from player " + player.ID + ": " + req.Count + " TDFs", Color.Cyan);
+                Logger.Log("[DIAG][7802:5] updateExtendedDataAttribute from player " + player.ID + ": " + req.Count + " TDFs", LogColor.Cyan);
                 // Parse the extended data update
                 long attrId = 0;
                 long attrVal = 0;
@@ -2460,13 +2450,13 @@ namespace ME3Server_WV
                     else if (tdf.Label == "VALU" && tdf is Blaze.TdfInteger)
                         attrVal = ((Blaze.TdfInteger)tdf).Value;
                 }
-                Logger.Log("[DIAG][7802:5] ATID=" + attrId + " VALU=0x" + attrVal.ToString("X") + " (" + attrVal + ")", Color.Cyan);
+                Logger.Log("[DIAG][7802:5] ATID=" + attrId + " VALU=0x" + attrVal.ToString("X") + " (" + attrVal + ")", LogColor.Cyan);
                 // Send empty response (real EA servers send empty for this command)
                 SendEmpty(player, p, 0x1000);
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7802:5] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7802:5] Error:\n" + GetExceptionMessage(e), LogColor.Red);
                 SendEmpty(player, p, 0x1000);
             }
         }   
@@ -2500,7 +2490,7 @@ namespace ME3Server_WV
             }
             catch (Exception e)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7802:14] Error:\n" + GetExceptionMessage(e), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][Handler_7802:14] Error:\n" + GetExceptionMessage(e), LogColor.Red);
             }
 
         }      
@@ -2570,7 +2560,7 @@ namespace ME3Server_WV
             {
                 pssAddr = Config.FindEntry("RedirectIP");
                 if (string.IsNullOrEmpty(pssAddr)) pssAddr = "127.0.0.1";
-                Logger.Log("[DIAG] Redirecting PlayerSync Service to " + pssAddr + " (was pointing to EA)", Color.Yellow);
+                Logger.Log("[DIAG] Redirecting PlayerSync Service to " + pssAddr + " (was pointing to EA)", LogColor.Yellow);
             }
             PSSList.Add(Blaze.TdfString.Create("ADRS", pssAddr));
             //Blaze.TdfInteger csig = Blaze.TdfInteger.Create("CSIG", ConvertHex(Config.FindEntry("PSSCSIG")));
@@ -2742,7 +2732,7 @@ namespace ME3Server_WV
             Result.Add(Blaze.TdfString.Create("PNAM", ""));
             Result.Add(Blaze.TdfInteger.Create("UID\0", 0));
             SendPacket(player, Blaze.CreatePacket(p.Component, p.Command, (ushort)errorcode, 0x3000, p.ID, Result));
-            Logger.Log("[Main Server Handler " + player.ID + "][SendLoginErrorPacket] " + player.IP + " => "  + errorcode + " (" + errorcode.ToString("X") + ")", Color.DarkGoldenrod);
+            Logger.Log("[Main Server Handler " + player.ID + "][SendLoginErrorPacket] " + player.IP + " => "  + errorcode + " (" + errorcode.ToString("X") + ")", LogColor.Orange);
         }
         public static void CreateAuthPacket01_28(Player.PlayerInfo player, Blaze.Packet p)
         {
@@ -2791,14 +2781,14 @@ namespace ME3Server_WV
                 if (reqTdf.Label == "VSTR" && reqTdf is Blaze.TdfString)
                     game.VSTR = ((Blaze.TdfString)reqTdf).Value;
             }
-            Logger.Log("[DIAG][GM] CreateGame: GSET=0x" + game.GAMESETTING.ToString("X") + " VSTR=" + game.VSTR, Color.Green);
+            Logger.Log("[DIAG][GM] CreateGame: GSET=0x" + game.GAMESETTING.ToString("X") + " VSTR=" + game.VSTR, LogColor.DarkGreen);
             // Log the game attributes for diagnostics
             try
             {
                 List<string> attrKeys = (List<string>)game.ATTR.List1;
                 List<string> attrVals = (List<string>)game.ATTR.List2;
                 for (int ai = 0; ai < attrKeys.Count; ai++)
-                    Logger.Log("[DIAG][GM] ATTR[" + ai + "]: " + attrKeys[ai] + " = " + attrVals[ai], Color.Cyan);
+                    Logger.Log("[DIAG][GM] ATTR[" + ai + "]: " + attrKeys[ai] + " = " + attrVals[ai], LogColor.Cyan);
             }
             catch (Exception) { }
             game.Attributes = new List<GameManager.GameInfo.Attribut>();
@@ -2905,14 +2895,14 @@ namespace ME3Server_WV
                                     // Capture GSID from template for game reporting ID
                                     Blaze.TdfInteger GSID = (Blaze.TdfInteger)tdf2;
                                     game.GSID = GSID.Value;
-                                    Logger.Log("[DIAG][GM] GSID from template: 0x" + GSID.Value.ToString("X"), Color.Cyan);
+                                    Logger.Log("[DIAG][GM] GSID from template: 0x" + GSID.Value.ToString("X"), LogColor.Cyan);
                                     break;
                                 case "GTYP":
                                     // Set game type to Syndicate_Coop so the client knows which
                                     // game report handler to use when the mission ends.
                                     Blaze.TdfString GTYP = (Blaze.TdfString)tdf2;
                                     GTYP.Value = "Syndicate_Coop";
-                                    Logger.Log("[DIAG][GM] Set GTYP to 'Syndicate_Coop' in NotifyGameSetup", Color.Green);
+                                    Logger.Log("[DIAG][GM] Set GTYP to 'Syndicate_Coop' in NotifyGameSetup", LogColor.DarkGreen);
                                     break;
 
                             }
@@ -3062,7 +3052,7 @@ namespace ME3Server_WV
             }
             catch(Exception ex)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][CreatePlayerJoinInfoForHost] Error:\n" + GetExceptionMessage(ex), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][CreatePlayerJoinInfoForHost] Error:\n" + GetExceptionMessage(ex), LogColor.Red);
             }
         }
         public static byte[] CreateJoiningDedicateServerInfo(GameManager.GameInfo game, Player.PlayerInfo player)
@@ -3224,7 +3214,7 @@ namespace ME3Server_WV
             }
             catch (Exception ex)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][CreateJoiningDedicateServerInfo] Error:\n" + GetExceptionMessage(ex), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][CreateJoiningDedicateServerInfo] Error:\n" + GetExceptionMessage(ex), LogColor.Red);
                 return new byte[0];
             }
         }        
@@ -3265,7 +3255,7 @@ namespace ME3Server_WV
             }
             catch (Exception ex)
             {
-                Logger.Log("[Main Server Handler " + player.ID + "][CreateMPPlayerInfo] Error:\n" + GetExceptionMessage(ex), Color.Red);
+                Logger.Log("[Main Server Handler " + player.ID + "][CreateMPPlayerInfo] Error:\n" + GetExceptionMessage(ex), LogColor.Red);
                 return new byte[0];
             }
         }
@@ -3293,11 +3283,11 @@ namespace ME3Server_WV
         {
             player.ClientStream.Write(buff, 0, buff.Length);
             player.ClientStream.Flush();
-            Logger.Log("[Main Server Handler " + player.ID + "] Send Response, len = " + buff.Length, Color.Blue);
+            Logger.Log("[Main Server Handler " + player.ID + "] Send Response, len = " + buff.Length, LogColor.Blue);
             List<Blaze.Packet> packets = Blaze.FetchAllBlazePackets(new MemoryStream(buff));
             foreach (Blaze.Packet p in packets)
             {
-                Logger.Log("[->][INFO] " + Blaze.PacketToDescriber(p), Color.DarkGray, 3);
+                Logger.Log("[->][INFO] " + Blaze.PacketToDescriber(p), LogColor.Gray, 3);
                 try
                 {
                     List<Blaze.Tdf> content = Blaze.ReadPacketContent(p);
@@ -3309,7 +3299,7 @@ namespace ME3Server_WV
         }
         public static void SendEmpty(Player.PlayerInfo player, Blaze.Packet p, ushort Qtype)
         {
-            Logger.Log("[->][EMPTY] Sending empty response for " + Blaze.PacketToDescriber(p), Color.DarkOrange);
+            Logger.Log("[->][EMPTY] Sending empty response for " + Blaze.PacketToDescriber(p), LogColor.Orange);
             List<Blaze.Tdf> Result = new List<Blaze.Tdf>();
             SendPacket(player, Blaze.CreatePacket(p.Component, p.Command, 0, Qtype, p.ID, Result));
         }
@@ -3334,7 +3324,7 @@ namespace ME3Server_WV
                         value = "blob[" + (((Blaze.TdfBlob)tdf).Data != null ? ((Blaze.TdfBlob)tdf).Data.Length : 0) + "]";
                         break;
                     case 3: // TdfStruct
-                        Logger.Log(direction + "[TDF] " + indent + tdf.Label + " (Struct):", Color.Gray, 3);
+                        Logger.Log(direction + "[TDF] " + indent + tdf.Label + " (Struct):", LogColor.Gray, 3);
                         LogTdfContent(((Blaze.TdfStruct)tdf).Values, direction, depth + 1);
                         continue;
                     case 4: // TdfList
@@ -3348,7 +3338,7 @@ namespace ME3Server_WV
                         value = "Union type=" + union.UnionType;
                         if (union.UnionContent != null)
                         {
-                            Logger.Log(direction + "[TDF] " + indent + tdf.Label + " " + value + ":", Color.Gray, 3);
+                            Logger.Log(direction + "[TDF] " + indent + tdf.Label + " " + value + ":", LogColor.Gray, 3);
                             LogTdfContent(new List<Blaze.Tdf> { union.UnionContent }, direction, depth + 1);
                             continue;
                         }
@@ -3374,7 +3364,7 @@ namespace ME3Server_WV
                         value = "(unknown type " + tdf.Type + ")";
                         break;
                 }
-                Logger.Log(direction + "[TDF] " + indent + tdf.Label + " = " + value, Color.Gray, 3);
+                Logger.Log(direction + "[TDF] " + indent + tdf.Label + " = " + value, LogColor.Gray, 3);
             }
         }
         public static byte[] ReadContentSSL(SslStream sslStream)
@@ -3425,8 +3415,8 @@ namespace ME3Server_WV
                 if (res.Length > 0)
                 {
                     byte[] partialData = res.ToArray();
-                    Logger.Log("[PARTIAL PACKET] Received " + partialData.Length + " bytes of incomplete data (" + e.GetType().Name + ")", Color.OrangeRed);
-                    Logger.Log("[PARTIAL PACKET] Hex dump:\n" + Blaze.HexDump(partialData), Color.OrangeRed);
+                    Logger.Log("[PARTIAL PACKET] Received " + partialData.Length + " bytes of incomplete data (" + e.GetType().Name + ")", LogColor.Orange);
+                    Logger.Log("[PARTIAL PACKET] Hex dump:\n" + Blaze.HexDump(partialData), LogColor.Orange);
                     // Try to decode Blaze header if we have at least 12 bytes
                     if (partialData.Length >= 12)
                     {
@@ -3439,19 +3429,19 @@ namespace ME3Server_WV
                             Logger.Log("[PARTIAL PACKET] Blaze header: Component=0x" + pkt.Component.ToString("X") +
                                 " Command=0x" + pkt.Command.ToString("X") +
                                 " (" + Blaze.PacketToDescriber(pkt) + ")" +
-                                " expectedContentLen=" + expectedLen + " gotContentLen=" + gotLen, Color.OrangeRed);
+                                " expectedContentLen=" + expectedLen + " gotContentLen=" + gotLen, LogColor.Orange);
                         }
                         catch (Exception)
                         {
-                            Logger.Log("[PARTIAL PACKET] Could not decode Blaze header from partial data", Color.OrangeRed);
+                            Logger.Log("[PARTIAL PACKET] Could not decode Blaze header from partial data", LogColor.Orange);
                         }
                     }
                     else
                     {
-                        Logger.Log("[PARTIAL PACKET] Too short for Blaze header (need 12 bytes, got " + partialData.Length + ")", Color.OrangeRed);
+                        Logger.Log("[PARTIAL PACKET] Too short for Blaze header (need 12 bytes, got " + partialData.Length + ")", LogColor.Orange);
                     }
                 }
-                // Also log when no data was received at all — this catches TCP RST
+                // Also log when no data was received at all � this catches TCP RST
                 // where the OS purges the receive buffer before we can read it.
                 // Suppress normal read-timeout IOExceptions (SocketErrorCode == TimedOut)
                 // which happen every 100ms loop when there's no data.
@@ -3466,9 +3456,9 @@ namespace ME3Server_WV
                     }
                     if (!isNormalTimeout)
                     {
-                        Logger.Log("[NET ERROR] ReadContent exception with 0 bytes: " + e.GetType().Name + ": " + e.Message, Color.OrangeRed);
+                        Logger.Log("[NET ERROR] ReadContent exception with 0 bytes: " + e.GetType().Name + ": " + e.Message, LogColor.Orange);
                         if (e.InnerException != null)
-                            Logger.Log("[NET ERROR] Inner: " + e.InnerException.GetType().Name + ": " + e.InnerException.Message, Color.OrangeRed);
+                            Logger.Log("[NET ERROR] Inner: " + e.InnerException.GetType().Name + ": " + e.InnerException.Message, LogColor.Orange);
                     }
                 }
                 System.Diagnostics.Debug.Print("ReadContent | " + GetExceptionMessage(e));
@@ -3699,9 +3689,7 @@ namespace ME3Server_WV
         }
         public static bool IsRunningAsAdmin()
         {
-            WindowsIdentity identity = WindowsIdentity.GetCurrent();
-            WindowsPrincipal principal = new WindowsPrincipal(identity);
-            return principal.IsInRole(WindowsBuiltInRole.Administrator);
+            if (OperatingSystem.IsWindows()) { try { var identity = System.Security.Principal.WindowsIdentity.GetCurrent(); var principal = new System.Security.Principal.WindowsPrincipal(identity); return principal.IsInRole(System.Security.Principal.WindowsBuiltInRole.Administrator); } catch { return true; } } return true; // On Linux, admin check is not typically needed
         }
         public static string GetLiveBINI()
         {
@@ -3793,7 +3781,7 @@ namespace ME3Server_WV
             list.Add(INIP);
             Blaze.TdfStruct VALU = Blaze.TdfStruct.Create("VALU", list);
             Blaze.TdfUnion union = Blaze.TdfUnion.Create(label, 0x02, VALU);
-            //Logger.Log(GetStringFromIP(player.INIP.IP) + " " + GetStringFromIP(player.EXIP.IP), Color.Purple);
+            //Logger.Log(GetStringFromIP(player.INIP.IP) + " " + GetStringFromIP(player.EXIP.IP), LogColor.Magenta);
             return union;
         }
         public static string GetExceptionMessage(Exception exception, int innerLevel = 0)
@@ -3816,7 +3804,7 @@ namespace ME3Server_WV
 #region GaW Functions
         public static string GetResponseGaWAuthentication(string request, out string playername)
         {
-            playername = "«undefined»";
+            playername = "�undefined�";
             string auth1 = "playernotfound";
             string strSession = "default";
             Uri authUri = new Uri("gaw://" + request);
@@ -3875,7 +3863,7 @@ namespace ME3Server_WV
         }
         public static string GetResponseGaWRatings(string request, out string playername)
         {
-            playername = "«undefined»";
+            playername = "�undefined�";
             Uri getRatingsUri = new Uri("gaw://" + request);
             string session = Path.GetFileName(getRatingsUri.LocalPath);
             int[] ratings = GaWGetRatings(session + ".txt");
@@ -3971,7 +3959,7 @@ namespace ME3Server_WV
         }
         public static void GaWIncreaseRatings(string request, out string playername)
         {
-            playername = "«undefined»";
+            playername = "�undefined�";
             Uri incRatingsUri = new Uri("gaw://" + request);
             string session = Path.GetFileName(incRatingsUri.LocalPath);
             int[] ratings = GaWGetRatings(session + ".txt");

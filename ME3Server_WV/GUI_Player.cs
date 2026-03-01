@@ -1,28 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
-using System.Net;
-using System.Net.Security;
-using System.Net.Sockets;
-using System.Threading;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
+using Avalonia.Controls;
 
 namespace ME3Server_WV
 {
-    public partial class GUI_Player : Form
+    public partial class GUI_Player : UserControl
     {
+        private Avalonia.Threading.DispatcherTimer timer1;
+        public List<int> Indexes;
+
         public GUI_Player()
         {
             InitializeComponent();
+            timer1 = new Avalonia.Threading.DispatcherTimer();
+            timer1.Interval = TimeSpan.FromMilliseconds(100);
+            timer1.Tick += timer1_Tick;
+            timer1.Start();
         }
-
-        public List<int> Indexes;
 
         private void timer1_Tick(object sender, EventArgs e)
         {
@@ -40,21 +34,23 @@ namespace ME3Server_WV
                     p.Update = false;
                 }
             }
-            if (count != listBox1.Items.Count||update)
+            if (count != listBox1.ItemCount || update)
             {
                 Indexes = new List<int>();
                 int n = listBox1.SelectedIndex;
-                listBox1.Items.Clear();
+                listBox1.ItemsSource = null;
+                var items = new List<string>();
                 for (int i = 0; i < Player.AllPlayers.Count; i++)
                 {
                     Player.PlayerInfo player = Player.AllPlayers[i];
                     if (player.isActive)
                     {
-                        listBox1.Items.Add(GetInfo(player));
+                        items.Add(GetInfo(player));
                         Indexes.Add(i);
                     }
                 }
-                if (n < listBox1.Items.Count)
+                listBox1.ItemsSource = items;
+                if (n >= 0 && n < listBox1.ItemCount)
                     listBox1.SelectedIndex = n;
             }
         }
@@ -72,10 +68,10 @@ namespace ME3Server_WV
             return s;
         }
 
-        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
+        private void listBox1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             int n = listBox1.SelectedIndex;
-            if (n == -1)
+            if (n == -1 || Indexes == null || n >= Indexes.Count)
                 return;
             string s = "";
             Player.PlayerInfo p = Player.AllPlayers[Indexes[n]];
@@ -104,18 +100,16 @@ namespace ME3Server_WV
             return res;
         }
 
-        private void editSettingsToolStripMenuItem_Click(object sender, EventArgs e)
+        private void editSettingsMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             int n = listBox1.SelectedIndex;
-            if (n == -1)
+            if (n == -1 || Indexes == null || n >= Indexes.Count)
                 return;
             Player.PlayerInfo p = Player.AllPlayers[Indexes[n]];
             GUI_PlayerSettings gui = new GUI_PlayerSettings();
             gui.player = p;
             gui.FreshList();
-            gui.MdiParent = this.MdiParent;
             gui.Show();
-            gui.WindowState = FormWindowState.Maximized;
         }
     }
 }

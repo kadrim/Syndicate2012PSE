@@ -3,8 +3,6 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Windows.Forms;
-using System.Drawing;
 
 namespace ME3Server_WV
 {
@@ -49,7 +47,7 @@ namespace ME3Server_WV
             public string Label;
             public uint Tag;
             public byte Type;
-            public TreeNode ToTree()
+            public TreeItemModel ToTree()
             {
                 string typedescription;
                 switch (Type)
@@ -91,7 +89,7 @@ namespace ME3Server_WV
                         typedescription = "(unknown)";
                         break;
                 }
-                return new TreeNode(Label + " : " + Type + " " + typedescription);
+                return new TreeItemModel(Label + " : " + Type + " " + typedescription);
             }
             public void Set(string label, byte type)
             {
@@ -672,7 +670,7 @@ namespace ME3Server_WV
                 case 115:
                 case 240:
                 case 112:
-                    Logger.Log("[BLAZE] Warning: Ignoring unknown Tdf Type " + res.Type + " Label: " + res.Label, Color.Orange);
+                    Logger.Log("[BLAZE] Warning: Ignoring unknown Tdf Type " + res.Type + " Label: " + res.Label, LogColor.Orange);
                     res.Label = "U";
                     return ReadTdfBlob(res, s);
                 default:

@@ -1,46 +1,51 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
+using System.Collections.ObjectModel;
+using Avalonia.Controls;
+using Avalonia.Platform.Storage;
 
 namespace ME3Server_WV
 {
-    public partial class GUI_PacketEditor : Form
+    public partial class GUI_PacketEditor : Window
     {
         public List<Blaze.Packet> Packets;
         public List<Blaze.Tdf> inlist;
         public int inlistcount;
         public int lastsearchtype = -1;
         public int lastsearch;
+        private ObservableCollection<TreeItemModel> treeItems = new();
 
         public GUI_PacketEditor()
         {
             InitializeComponent();
+            treeView1.ItemsSource = treeItems;
         }
 
-        private void openBINToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void openBINMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            OpenFileDialog d = new OpenFileDialog();
-            d.Filter = "*.bin|*.bin";
-            if (d.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var topLevel = TopLevel.GetTopLevel(this);
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
             {
-                try
-                {
-                    MemoryStream m = new MemoryStream(File.ReadAllBytes(d.FileName));
-                    Packets = Blaze.FetchAllBlazePackets(m);
-                    RefreshStuff();
-                    this.Text = "Packet Viewer - " + Path.GetFileName(d.FileName);
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error:\n" + ex.Message);
-                    Packets = null;
-                }
+                Title = "Open BIN",
+                FileTypeFilter = new[] { new FilePickerFileType("BIN files") { Patterns = new[] { "*.bin" } } },
+                AllowMultiple = false
+            });
+
+            if (files.Count == 0) return;
+            try
+            {
+                var filePath = files[0].TryGetLocalPath();
+                if (filePath == null) return;
+                MemoryStream m = new MemoryStream(File.ReadAllBytes(filePath));
+                Packets = Blaze.FetchAllBlazePackets(m);
+                RefreshStuff();
+                this.Title = "Packet Viewer - " + Path.GetFileName(filePath);
+            }
+            catch (Exception ex)
+            {
+                Logger.Log("Packet Editor Error: " + ex.Message, LogColor.Red);
+                Packets = null;
             }
         }
 
@@ -48,7 +53,7 @@ namespace ME3Server_WV
         {
             if (Packets == null)
                 return;
-            listBox1.Items.Clear();
+            var items = new List<string>();
             int count = 0;
             foreach (Blaze.Packet p in Packets)
             {
@@ -77,24 +82,25 @@ namespace ME3Server_WV
                         break;
                 }
                 s += "[INFO] " + Blaze.PacketToDescriber(p);
-                listBox1.Items.Add(s);
+                items.Add(s);
             }
+            listBox1.ItemsSource = items;
         }
 
-        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
+        private void listBox1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             int n = listBox1.SelectedIndex;
             if (n == -1) return;
             try
             {
                 rtb2.Text = Blaze.HexDump(Blaze.PacketToRaw(Packets[n]));
-                treeView1.Nodes.Clear();
+                treeItems.Clear();
                 rtb1.Text = "";
                 inlist = new List<Blaze.Tdf>();
                 inlistcount = 0;
                 List<Blaze.Tdf> Fields = Blaze.ReadPacketContent(Packets[n]);
                 foreach (Blaze.Tdf tdf in Fields)
-                    treeView1.Nodes.Add(TdfToTree(tdf));
+                    treeItems.Add(TdfToTree(tdf));
             }
             catch (Exception ex)
             {
@@ -102,101 +108,100 @@ namespace ME3Server_WV
             }
         }
 
-        private TreeNode TdfToTree(Blaze.Tdf tdf)
-        {            
-            TreeNode t, t2, t3;
+        private TreeItemModel TdfToTree(Blaze.Tdf tdf)
+        {
+            TreeItemModel t, t2, t3;
             switch (tdf.Type)
-                {
-                    case 3:
-                        t = tdf.ToTree();
-                        Blaze.TdfStruct str = (Blaze.TdfStruct)tdf;
-                        if (str.startswith2)
-                            t.Text += " (Starts with 2)";
-                        foreach (Blaze.Tdf td in str.Values)
-                            t.Nodes.Add(TdfToTree(td));
-                        t.Name = (inlistcount++).ToString();
-                        inlist.Add(tdf);
-                        return t;
-                    case 4:
-                        t = tdf.ToTree();
-                        Blaze.TdfList l = (Blaze.TdfList)tdf;
-                        if (l.SubType == 3)
+            {
+                case 3:
+                    t = tdf.ToTree();
+                    Blaze.TdfStruct str = (Blaze.TdfStruct)tdf;
+                    if (str.startswith2)
+                        t.Text += " (Starts with 2)";
+                    foreach (Blaze.Tdf td in str.Values)
+                        t.Children.Add(TdfToTree(td));
+                    t.Name = (inlistcount++).ToString();
+                    inlist.Add(tdf);
+                    return t;
+                case 4:
+                    t = tdf.ToTree();
+                    Blaze.TdfList l = (Blaze.TdfList)tdf;
+                    if (l.SubType == 3)
+                    {
+                        List<Blaze.TdfStruct> l2 = (List<Blaze.TdfStruct>)l.List;
+                        for (int i = 0; i < l2.Count; i++)
                         {
-                            List<Blaze.TdfStruct> l2 = (List<Blaze.TdfStruct>)l.List;
-                            for (int i = 0; i < l2.Count; i++)
-                            {
-                                t2 = new TreeNode("Entry #" + i);
-                                if (l2[i].startswith2)
-                                    t2.Text += " (Starts with 2)";
-                                List<Blaze.Tdf> l3 = l2[i].Values;
-                                for (int j = 0; j < l3.Count; j++)
-                                    t2.Nodes.Add(TdfToTree(l3[j]));
-                                t.Nodes.Add(t2);
-                            }
+                            t2 = new TreeItemModel("Entry #" + i);
+                            if (l2[i].startswith2)
+                                t2.Text += " (Starts with 2)";
+                            List<Blaze.Tdf> l3 = l2[i].Values;
+                            for (int j = 0; j < l3.Count; j++)
+                                t2.Children.Add(TdfToTree(l3[j]));
+                            t.Children.Add(t2);
                         }
-                        t.Name = (inlistcount++).ToString();
-                        inlist.Add(tdf);
-                        return t;
-                    case 5:
-                        t = tdf.ToTree();
-                        Blaze.TdfDoubleList ll = (Blaze.TdfDoubleList)tdf;
-                        t2 = new TreeNode("List 1");
-                        if (ll.SubType1 == 3)
+                    }
+                    t.Name = (inlistcount++).ToString();
+                    inlist.Add(tdf);
+                    return t;
+                case 5:
+                    t = tdf.ToTree();
+                    Blaze.TdfDoubleList ll = (Blaze.TdfDoubleList)tdf;
+                    t2 = new TreeItemModel("List 1");
+                    if (ll.SubType1 == 3)
+                    {
+                        List<Blaze.TdfStruct> l2 = (List<Blaze.TdfStruct>)ll.List1;
+                        for (int i = 0; i < l2.Count; i++)
                         {
-                            List<Blaze.TdfStruct> l2 = (List<Blaze.TdfStruct>)ll.List1;
-                            for (int i = 0; i < l2.Count; i++)
-                            {
-                                t3 = new TreeNode("Entry #" + i);
-                                if (l2[i].startswith2)
-                                    t2.Text += " (Starts with 2)";
-                                List<Blaze.Tdf> l3 = l2[i].Values;
-                                for (int j = 0; j < l3.Count; j++)
-                                    t3.Nodes.Add(TdfToTree(l3[j]));
-                                t2.Nodes.Add(t3);
-                            }
-                            t.Nodes.Add(t2);
+                            t3 = new TreeItemModel("Entry #" + i);
+                            if (l2[i].startswith2)
+                                t2.Text += " (Starts with 2)";
+                            List<Blaze.Tdf> l3 = l2[i].Values;
+                            for (int j = 0; j < l3.Count; j++)
+                                t3.Children.Add(TdfToTree(l3[j]));
+                            t2.Children.Add(t3);
                         }
-                        t2 = new TreeNode("List 2");
-                        if (ll.SubType2 == 3)
+                        t.Children.Add(t2);
+                    }
+                    t2 = new TreeItemModel("List 2");
+                    if (ll.SubType2 == 3)
+                    {
+                        List<Blaze.TdfStruct> l2 = (List<Blaze.TdfStruct>)ll.List2;
+                        for (int i = 0; i < l2.Count; i++)
                         {
-                            List<Blaze.TdfStruct> l2 = (List<Blaze.TdfStruct>)ll.List2;
-                            for (int i = 0; i < l2.Count; i++)
-                            {
-                                t3 = new TreeNode("Entry #" + i);
-                                if (l2[i].startswith2)
-                                    t2.Text += " (Starts with 2)";
-                                List<Blaze.Tdf> l3 = l2[i].Values;
-                                for (int j = 0; j < l3.Count; j++)
-                                    t3.Nodes.Add(TdfToTree(l3[j]));
-                                t2.Nodes.Add(t3);
-                            }
-                            t.Nodes.Add(t2);
+                            t3 = new TreeItemModel("Entry #" + i);
+                            if (l2[i].startswith2)
+                                t2.Text += " (Starts with 2)";
+                            List<Blaze.Tdf> l3 = l2[i].Values;
+                            for (int j = 0; j < l3.Count; j++)
+                                t3.Children.Add(TdfToTree(l3[j]));
+                            t2.Children.Add(t3);
                         }
-                        t.Name = (inlistcount++).ToString();
-                        inlist.Add(tdf);
-                        return t;
-                    case 6:
-                        t = tdf.ToTree();
-                        Blaze.TdfUnion tu = (Blaze.TdfUnion)tdf;
-                        if (tu.UnionType != 0x7F)
-                        {
-                            t.Nodes.Add(TdfToTree(tu.UnionContent));
-                        }
-                        t.Name = (inlistcount++).ToString();
-                        inlist.Add(tdf);
-                        return t;
-                    default:
-                        t = tdf.ToTree();
-                        t.Name = (inlistcount++).ToString();
-                        inlist.Add(tdf);
-                        return t;
-                }
+                        t.Children.Add(t2);
+                    }
+                    t.Name = (inlistcount++).ToString();
+                    inlist.Add(tdf);
+                    return t;
+                case 6:
+                    t = tdf.ToTree();
+                    Blaze.TdfUnion tu = (Blaze.TdfUnion)tdf;
+                    if (tu.UnionType != 0x7F)
+                    {
+                        t.Children.Add(TdfToTree(tu.UnionContent));
+                    }
+                    t.Name = (inlistcount++).ToString();
+                    inlist.Add(tdf);
+                    return t;
+                default:
+                    t = tdf.ToTree();
+                    t.Name = (inlistcount++).ToString();
+                    inlist.Add(tdf);
+                    return t;
+            }
         }
 
-        private void treeView1_AfterSelect(object sender, TreeViewEventArgs e)
+        private void treeView1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            TreeNode t = e.Node;
-            if (t != null && t.Name != "")
+            if (treeView1.SelectedItem is TreeItemModel t && t.Name != "")
             {
                 int n = Convert.ToInt32(t.Name);
                 Blaze.Tdf tdf = inlist[n];
@@ -208,7 +213,7 @@ namespace ME3Server_WV
                         rtb1.Text = "0x" + ti.Value.ToString("X");
                         if (ti.Label == "IP  ")
                         {
-                            rtb1.Text +=  Environment.NewLine + "(" + ME3Server.GetStringFromIP(ti.Value) + ")";
+                            rtb1.Text += Environment.NewLine + "(" + ME3Server.GetStringFromIP(ti.Value) + ")";
                         }
                         break;
                     case 1:
@@ -232,8 +237,8 @@ namespace ME3Server_WV
                                     s += "{" + ((List<string>)l.List)[i] + "} ";
                                     break;
                                 case 9:
-                                    Blaze.TrippleVal t2 =((List<Blaze.TrippleVal>)l.List)[i];
-                                    s += "{" + t2.v1.ToString("X") + "; " + t2.v2.ToString("X") + "; " + t2.v3.ToString("X") + "} ";
+                                    Blaze.TrippleVal tv = ((List<Blaze.TrippleVal>)l.List)[i];
+                                    s += "{" + tv.v1.ToString("X") + "; " + tv.v2.ToString("X") + "; " + tv.v3.ToString("X") + "} ";
                                     break;
                             }
                         }
@@ -241,22 +246,22 @@ namespace ME3Server_WV
                         break;
                     case 5:
                         s = "";
-                        Blaze.TdfDoubleList ll = (Blaze.TdfDoubleList)tdf;
-                        for (int i = 0; i < ll.Count; i++)
+                        Blaze.TdfDoubleList dll = (Blaze.TdfDoubleList)tdf;
+                        for (int i = 0; i < dll.Count; i++)
                         {
                             s += "{";
-                            switch (ll.SubType1)
+                            switch (dll.SubType1)
                             {
                                 case 0:
-                                    List<long> l1 = (List<long>)ll.List1;
+                                    List<long> l1 = (List<long>)dll.List1;
                                     s += l1[i].ToString("X");
                                     break;
-                                case 1:                                    
-                                    List<string> l2 = (List<string>)ll.List1;
-                                    s += l2[i];
+                                case 1:
+                                    List<string> l2s = (List<string>)dll.List1;
+                                    s += l2s[i];
                                     break;
                                 case 0xA:
-                                    List<float> lf1 = (List<float>)ll.List1;
+                                    List<float> lf1 = (List<float>)dll.List1;
                                     s += lf1[i].ToString();
                                     break;
                                 default:
@@ -264,18 +269,18 @@ namespace ME3Server_WV
                                     break;
                             }
                             s += " ; ";
-                            switch (ll.SubType2)
+                            switch (dll.SubType2)
                             {
                                 case 0:
-                                    List<long> l1 = (List<long>)ll.List2;
+                                    List<long> l1 = (List<long>)dll.List2;
                                     s += l1[i].ToString("X");
                                     break;
                                 case 1:
-                                    List<string> l2 = (List<string>)ll.List2;
-                                    s += l2[i];
+                                    List<string> l2s = (List<string>)dll.List2;
+                                    s += l2s[i];
                                     break;
                                 case 0xA:
-                                    List<float> lf1 = (List<float>)ll.List2;
+                                    List<float> lf1 = (List<float>)dll.List2;
                                     s += lf1[i].ToString();
                                     break;
                                 default:
@@ -307,7 +312,7 @@ namespace ME3Server_WV
                     case 9:
                         Blaze.TdfTrippleVal tval = (Blaze.TdfTrippleVal)tdf;
                         rtb1.Text = "0x" + tval.Value.v1.ToString("X") + " 0x" + tval.Value.v2.ToString("X") + " 0x" + tval.Value.v3.ToString("X");
-                        break;                    
+                        break;
                     default:
                         rtb1.Text = "";
                         break;
@@ -315,9 +320,9 @@ namespace ME3Server_WV
             }
         }
 
-        private void toolStripButton1_Click(object sender, EventArgs e)
+        private void toolStripButton1_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            string s = toolStripTextBox1.Text.Replace(" ","");
+            string s = toolStripTextBox1.Text.Replace(" ", "");
             if (s.Length != 6)
                 return;
             string v = s + "00";
@@ -328,20 +333,29 @@ namespace ME3Server_WV
             toolStripTextBox2.Text = label;
         }
 
-        private void saveRawToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void saveRawMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             int n = listBox1.SelectedIndex;
             if (n == -1) return;
-            SaveFileDialog d = new SaveFileDialog();
-            d.Filter = "*.bin|*.bin";
-            if (d.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var topLevel = TopLevel.GetTopLevel(this);
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
-                File.WriteAllBytes(d.FileName, Blaze.PacketToRaw(Packets[n]));
-                MessageBox.Show("Done.");
+                Title = "Save Raw",
+                DefaultExtension = "bin",
+                FileTypeChoices = new[] { new FilePickerFileType("BIN files") { Patterns = new[] { "*.bin" } } }
+            });
+            if (file != null)
+            {
+                var filePath = file.TryGetLocalPath();
+                if (filePath != null)
+                {
+                    File.WriteAllBytes(filePath, Blaze.PacketToRaw(Packets[n]));
+                    Logger.Log("Raw packet saved.", LogColor.Black);
+                }
             }
         }
 
-        private void toolStripButton2_Click(object sender, EventArgs e)
+        private void toolStripButton2_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             byte[] buff = Blaze.Label2Tag(toolStripTextBox2.Text);
             string s = "";
@@ -350,38 +364,46 @@ namespace ME3Server_WV
             toolStripTextBox1.Text = s;
         }
 
-        private void exportTreeToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void exportTreeMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            if (treeView1.Nodes.Count == 0)
+            if (treeItems.Count == 0)
                 return;
-            SaveFileDialog d = new SaveFileDialog();
-            d.Filter = "*.txt|*.txt";
-            if (d.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var topLevel = TopLevel.GetTopLevel(this);
+            var file = await topLevel.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
             {
-                File.WriteAllText(d.FileName, ReadNodes(0, treeView1.Nodes));
-                MessageBox.Show("Done.");
+                Title = "Export Tree",
+                DefaultExtension = "txt",
+                FileTypeChoices = new[] { new FilePickerFileType("Text files") { Patterns = new[] { "*.txt" } } }
+            });
+            if (file != null)
+            {
+                var filePath = file.TryGetLocalPath();
+                if (filePath != null)
+                {
+                    File.WriteAllText(filePath, ReadNodes(0, treeItems));
+                    Logger.Log("Tree exported.", LogColor.Black);
+                }
             }
         }
 
-        private string ReadNodes(int tab, TreeNodeCollection t)
+        private string ReadNodes(int tab, IEnumerable<TreeItemModel> nodes)
         {
             string tb = "";
             for (int i = 0; i < tab; i++)
                 tb += "\t";
             string res = "";
-            for (int i = 0; i < t.Count; i++)
+            foreach (var node in nodes)
             {
-                TreeNode t2 = t[i];
-                res += tb + t2.Text + "\r\n";
-                if (t2.Nodes.Count != 0)
-                    res += ReadNodes(tab + 1, t2.Nodes);
+                res += tb + node.Text + "\r\n";
+                if (node.Children.Count != 0)
+                    res += ReadNodes(tab + 1, node.Children);
             }
             return res;
         }
 
-        private void toolStripButton3_Click(object sender, EventArgs e)
+        private void toolStripButton3_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            string s = toolStripTextBox3.Text.Replace(" ","");
+            string s = toolStripTextBox3.Text.Replace(" ", "");
             if (s == "")
                 return;
             long l = Convert.ToInt64(s, 16);
@@ -394,7 +416,7 @@ namespace ME3Server_WV
             toolStripTextBox4.Text = r;
         }
 
-        private void toolStripButton4_Click(object sender, EventArgs e)
+        private void toolStripButton4_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             string s = toolStripTextBox4.Text.Replace(" ", "");
             if (s == "")
@@ -407,30 +429,27 @@ namespace ME3Server_WV
             toolStripTextBox3.Text = l.ToString("X");
         }
 
-        private void treeToolStripMenuItem_Click(object sender, EventArgs e)
+        private void treeMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            treeToolStripMenuItem.Checked = true;
-            rawToolStripMenuItem.Checked = false;
-            treeView1.BringToFront();
+            treeView1.IsVisible = true;
+            rtb2.IsVisible = false;
         }
 
-        private void rawToolStripMenuItem_Click(object sender, EventArgs e)
+        private void rawMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            treeToolStripMenuItem.Checked = false;
-            rawToolStripMenuItem.Checked = true;
-            rtb2.BringToFront();
+            treeView1.IsVisible = false;
+            rtb2.IsVisible = true;
         }
 
-        private void findNextByComponentToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void findByComponentMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            if (listBox1.Items.Count == 0)
-                return;
-            string result = Microsoft.VisualBasic.Interaction.InputBox("Please Enter ID in hex", "Find by Component", "9");
-            if (result == "")
-                return;
+            if (listBox1.ItemCount == 0) return;
+            var dialog = new InputDialog("Find by Component", "Please Enter ID in hex", "9");
+            string result = await dialog.ShowDialog<string>(this);
+            if (string.IsNullOrEmpty(result)) return;
             int ID = Convert.ToInt32(result, 16);
             int n = listBox1.SelectedIndex;
-            for (int i = n + 1; i < listBox1.Items.Count; i++) 
+            for (int i = n + 1; i < listBox1.ItemCount; i++)
                 if (Packets[i].Component == ID)
                 {
                     listBox1.SelectedIndex = i;
@@ -440,14 +459,12 @@ namespace ME3Server_WV
                 }
         }
 
-        private void searchAgainToolStripMenuItem_Click(object sender, EventArgs e)
+        private void searchAgainMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            if (lastsearchtype == -1)
-                return;
-            if (listBox1.Items.Count == 0)
-                return;
+            if (lastsearchtype == -1) return;
+            if (listBox1.ItemCount == 0) return;
             int n = listBox1.SelectedIndex;
-            for (int i = n + 1; i < listBox1.Items.Count; i++)
+            for (int i = n + 1; i < listBox1.ItemCount; i++)
             {
                 switch (lastsearchtype)
                 {
@@ -469,16 +486,15 @@ namespace ME3Server_WV
             }
         }
 
-        private void findNextByCommandToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void findByCommandMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            if (listBox1.Items.Count == 0)
-                return;
-            string result = Microsoft.VisualBasic.Interaction.InputBox("Please Enter ID in hex", "Find by Command", "1D");
-            if (result == "")
-                return;
+            if (listBox1.ItemCount == 0) return;
+            var dialog = new InputDialog("Find by Command", "Please Enter ID in hex", "1D");
+            string result = await dialog.ShowDialog<string>(this);
+            if (string.IsNullOrEmpty(result)) return;
             int ID = Convert.ToInt32(result, 16);
             int n = listBox1.SelectedIndex;
-            for (int i = n + 1; i < listBox1.Items.Count; i++)
+            for (int i = n + 1; i < listBox1.ItemCount; i++)
                 if (Packets[i].Command == ID)
                 {
                     listBox1.SelectedIndex = i;

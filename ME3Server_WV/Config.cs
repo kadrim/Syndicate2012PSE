@@ -1,16 +1,12 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
 
 namespace ME3Server_WV
 {
     public static class Config
     {
-        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
+        private static string loc = AppContext.BaseDirectory;
         private static readonly object _sync = new object();
         public static List<string> Entries;
 
@@ -19,7 +15,7 @@ namespace ME3Server_WV
             if (File.Exists(loc + "conf" + Path.DirectorySeparatorChar + "conf.txt"))
                 Entries = new List<string>(File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "conf.txt")); 
             else
-                Logger.Log("Configuration loading failed", Color.Red);
+                Logger.Log("Configuration loading failed", LogColor.Red);
         }
 
         public static string FindEntry(string name)

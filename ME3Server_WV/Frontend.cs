@@ -1,92 +1,56 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+using Avalonia.Controls;
+using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 
 namespace ME3Server_WV
 {
-    public partial class Frontend : Form
+    public partial class Frontend : Window
     {
-        public static string loc = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
-        public static string sysdir = Environment.SystemDirectory + Path.DirectorySeparatorChar;
-        public GUI_Log LogWindow;
-        public GUI_Player PlayerWindow;
-        public GUI_GameList GameList;
+        public static string loc = AppContext.BaseDirectory;
+        public static string sysdir = Environment.GetFolderPath(Environment.SpecialFolder.System) + Path.DirectorySeparatorChar;
         private static Frontend frontend;
 
         public Frontend()
         {
             InitializeComponent();
             frontend = this;
+            this.Opened += Frontend_Shown;
         }
 
         public static void UpdateLogLevelMenu()
         {
-            frontend.level0MostCriticalToolStripMenuItem.Checked = (Logger.LogLevel == 0);
-            frontend.level3ToolStripMenuItem.Checked = (Logger.LogLevel == 3);
-            frontend.level5EverythingToolStripMenuItem.Checked = (Logger.LogLevel == 5);
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (frontend == null) return;
+                var level0 = frontend.FindControl<MenuItem>("level0MenuItem");
+                var level3 = frontend.FindControl<MenuItem>("level3MenuItem");
+                var level5 = frontend.FindControl<MenuItem>("level5MenuItem");
+                // Avalonia MenuItems don't have Checked, use Icon marker instead
+                if (level0 != null) level0.Header = (Logger.LogLevel == 0 ? "* " : "") + "Level 0 Most Critical";
+                if (level3 != null) level3.Header = (Logger.LogLevel == 3 ? "* " : "") + "Level 3 Moderate";
+                if (level5 != null) level5.Header = (Logger.LogLevel == 5 ? "* " : "") + "Level 5 Everything";
+            });
         }
 
         public static void UpdateMITMMenuState()
         {
-            frontend.activateToolStripMenuItem.Text = ME3Server.isMITM ? "Deactivate" : "Activate";
-            frontend.recordPlayerSettingsToolStripMenuItem.Enabled = ME3Server.isMITM;
-            frontend.importPlayerSettingsToolStripMenuItem.Enabled = ME3Server.isMITM;
-        }
-
-        private void Frontend_Load(object sender, EventArgs e)
-        {
-            string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            this.Text = "Syndicate 2012 Private Server Emulator by Kadrim, build: " + version;
-            LogWindow = new GUI_Log();
-            PlayerWindow = new GUI_Player();
-            GameList = new GUI_GameList();
-            OpenMaxed(PlayerWindow);
-            OpenMaxed(GameList);         
-            OpenMaxed(LogWindow); 
-        }
-
-        public void OpenMaxed(Form f)
-        {
-            f.MdiParent = this;
-            f.Show();
-            f.WindowState = FormWindowState.Maximized;
-        }
-
-        private void patchGameToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            PatchGame();
-        }
-
-        public static void PatchGame()
-        {
-            OpenFileDialog d = new OpenFileDialog();
-            d.Filter = "masseffect3.exe|masseffect3.exe";
-            if (d.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            Dispatcher.UIThread.Post(() =>
             {
-                try
-                {
-                    string path = Path.GetDirectoryName(d.FileName);
-                    File.Copy(loc + "patch" + Path.DirectorySeparatorChar + "binkw32.dll", path + Path.DirectorySeparatorChar + "binkw32.dll", true);
-                    File.Copy(loc + "patch" + Path.DirectorySeparatorChar + "binkw23.dll", path + Path.DirectorySeparatorChar + "binkw23.dll", true);
-                    if (File.Exists(loc + "patch" + Path.DirectorySeparatorChar + "MassEffect3.exe"))
-                        File.Copy(loc + "patch" + Path.DirectorySeparatorChar + "MassEffect3.exe", path + Path.DirectorySeparatorChar + "MassEffect3.exe", true);
-                    MessageBox.Show("Done.");
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show("Error:\n" + ME3Server.GetExceptionMessage(ex));
-                }
-            }
+                if (frontend == null) return;
+                var activateItem = frontend.FindControl<MenuItem>("activateMITMMenuItem");
+                var recordItem = frontend.FindControl<MenuItem>("recordPlayerSettingsMenuItem");
+                var importItem = frontend.FindControl<MenuItem>("importPlayerSettingsMenuItem");
+                if (activateItem != null) activateItem.Header = ME3Server.isMITM ? "Deactivate" : "Activate";
+                if (recordItem != null) recordItem.IsEnabled = ME3Server.isMITM;
+                if (importItem != null) importItem.IsEnabled = ME3Server.isMITM;
+            });
         }
 
-        private void aktivateRedirectionToolStripMenuItem_Click(object sender, EventArgs e)
+        private void aktivateRedirectionMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             ActivateRedirection(Config.FindEntry("RedirectIP"));
         }
@@ -97,23 +61,24 @@ namespace ME3Server_WV
             try
             {
                 List<string> r = new List<string>(File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "redirect.txt"));
-                List<string> h = new List<string>(File.ReadAllLines(sysdir + @"drivers" + Path.DirectorySeparatorChar + "etc" + Path.DirectorySeparatorChar + "hosts"));
+                string hostsPath = GetHostsFilePath();
+                List<string> h = new List<string>(File.ReadAllLines(hostsPath));
                 foreach (string url in r)
                 {
                     string s = hostIP + " " + url;
                     if (!h.Contains(s))
                         h.Add(s);
                 }
-                File.WriteAllLines(sysdir + @"drivers\etc\hosts", h);
-                MessageBox.Show("Done.", "Activate Redirection");
+                File.WriteAllLines(hostsPath, h);
+                Logger.Log("Redirection activated.", LogColor.Black);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error:\n" + ME3Server.GetExceptionMessage(ex), "Activate Redirection");
+                Logger.Log("Activate Redirection Error: " + ME3Server.GetExceptionMessage(ex), LogColor.Red);
             }
         }
 
-        private void deactivateRedirectionToolStripMenuItem_Click(object sender, EventArgs e)
+        private void deactivateRedirectionMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             DeactivateRedirection();
         }
@@ -123,7 +88,8 @@ namespace ME3Server_WV
             try
             {
                 List<string> r = new List<string>(File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "redirect.txt"));
-                List<string> h = new List<string>(File.ReadAllLines(sysdir + @"drivers" + Path.DirectorySeparatorChar + "etc" + Path.DirectorySeparatorChar + "hosts"));
+                string hostsPath = GetHostsFilePath();
+                List<string> h = new List<string>(File.ReadAllLines(hostsPath));
                 foreach (string url in r)
                 {
                     for (int i = (h.Count - 1); i >= 0; i--)
@@ -132,14 +98,14 @@ namespace ME3Server_WV
                             h.RemoveAt(i);
                     }
                 }
-                File.WriteAllLines(sysdir + @"drivers\etc\hosts", h);
+                File.WriteAllLines(hostsPath, h);
                 if (bShowMsg)
-                    MessageBox.Show("Done.", "Deactivate Redirection");
+                    Logger.Log("Redirection deactivated.", LogColor.Black);
             }
             catch (Exception ex)
             {
                 if (bShowMsg)
-                    MessageBox.Show("Error:\n" + ME3Server.GetExceptionMessage(ex), "Deactivate Redirection");
+                    Logger.Log("Deactivate Redirection Error: " + ME3Server.GetExceptionMessage(ex), LogColor.Red);
                 else
                     System.Diagnostics.Debug.Print("DeactivateRedirection | " + ME3Server.GetExceptionMessage(ex));
             }
@@ -149,10 +115,10 @@ namespace ME3Server_WV
         {
             try
             {
-
                 int count = 0;
                 List<string> r = new List<string>(File.ReadAllLines(loc + "conf" + Path.DirectorySeparatorChar + "redirect.txt"));
-                List<string> h = new List<string>(File.ReadAllLines(sysdir + @"drivers" + Path.DirectorySeparatorChar + "etc" + Path.DirectorySeparatorChar + "hosts"));
+                string hostsPath = GetHostsFilePath();
+                List<string> h = new List<string>(File.ReadAllLines(hostsPath));
                 foreach (string url in r)
                 {
                     for (int i = (h.Count - 1); i >= 0; i--)
@@ -161,10 +127,7 @@ namespace ME3Server_WV
                             count++;
                     }
                 }
-                if (count > 0)
-                    return true;
-                else
-                    return false;
+                return count > 0;
             }
             catch (Exception ex)
             {
@@ -173,111 +136,132 @@ namespace ME3Server_WV
             }
         }
 
-        private void showContentToolStripMenuItem_Click(object sender, EventArgs e)
+        private static string GetHostsFilePath()
+        {
+            if (OperatingSystem.IsWindows())
+                return sysdir + @"drivers" + Path.DirectorySeparatorChar + "etc" + Path.DirectorySeparatorChar + "hosts";
+            else
+                return "/etc/hosts";
+        }
+
+        private void showContentMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             try
             {
-                MessageBox.Show(File.ReadAllText(sysdir + @"drivers\etc\hosts"), "Show Content");
+                string content = File.ReadAllText(GetHostsFilePath());
+                Logger.Log("Hosts file content:\n" + content, LogColor.Black);
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error:\n" + ME3Server.GetExceptionMessage(ex), "Show Content");
+                Logger.Log("Show Content Error: " + ME3Server.GetExceptionMessage(ex), LogColor.Red);
             }
         }
 
-        private void packetEditorToolStripMenuItem_Click(object sender, EventArgs e)
+        private void packetEditorMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             GUI_PacketEditor p = new GUI_PacketEditor();
-            p.MdiParent = this;
             p.Show();
-            p.WindowState = FormWindowState.Maximized;
         }
 
-        private void showLogToolStripMenuItem_Click(object sender, EventArgs e)
+        private void showLogMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            LogWindow.BringToFront();
+            var tabControl = this.FindControl<TabControl>("tabControl");
+            var logTab = this.FindControl<TabItem>("logTab");
+            if (tabControl != null && logTab != null)
+                tabControl.SelectedItem = logTab;
         }
 
-        private void showPlayerListToolStripMenuItem_Click(object sender, EventArgs e)
+        private void showPlayerListMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            PlayerWindow.BringToFront();
+            var tabControl = this.FindControl<TabControl>("tabControl");
+            var playerTab = this.FindControl<TabItem>("playerTab");
+            if (tabControl != null && playerTab != null)
+                tabControl.SelectedItem = playerTab;
         }
 
-        private void showGameListToolStripMenuItem_Click(object sender, EventArgs e)
+        private void showGameListMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            GameList.BringToFront();
+            var tabControl = this.FindControl<TabControl>("tabControl");
+            var gameListTab = this.FindControl<TabItem>("gameListTab");
+            if (tabControl != null && gameListTab != null)
+                tabControl.SelectedItem = gameListTab;
         }
 
-        private void localProfileCreatorToolStripMenuItem_Click(object sender, EventArgs e)
+        private void localProfileCreatorMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             GUI_ProfileCreator pc = new GUI_ProfileCreator();
-            pc.StartPosition = FormStartPosition.CenterScreen;
             pc.Show();
         }
 
-        private void deleteLogsToolStripMenuItem_Click(object sender, EventArgs e)
+        private void deleteLogsMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             string[] logs = Directory.GetFiles(loc + "logs" + Path.DirectorySeparatorChar);
             foreach (string log in logs)
                 File.Delete(log);
-            MessageBox.Show("Done");
+            Logger.Log("Logs deleted.", LogColor.Black);
         }
 
-        private void level0MostCriticalToolStripMenuItem_Click(object sender, EventArgs e)
+        private void level0MenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            if (Logger.LogLevel == 0)
-                return;
+            if (Logger.LogLevel == 0) return;
             Logger.LogLevel = 0;
-            Logger.Log("Log Level Changed to : " + Logger.LogLevel, Color.Black);
+            Logger.Log("Log Level Changed to : " + Logger.LogLevel, LogColor.Black);
             UpdateLogLevelMenu();
         }
 
-        private void level3ToolStripMenuItem_Click(object sender, EventArgs e)
+        private void level3MenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            if (Logger.LogLevel == 3)
-                return;
+            if (Logger.LogLevel == 3) return;
             Logger.LogLevel = 3;
-            Logger.Log("Log Level Changed to : " + Logger.LogLevel, Color.Black);
+            Logger.Log("Log Level Changed to : " + Logger.LogLevel, LogColor.Black);
             UpdateLogLevelMenu();
         }
 
-        private void level5EverythingToolStripMenuItem_Click(object sender, EventArgs e)
+        private void level5MenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            if (Logger.LogLevel == 5)
-                return;
+            if (Logger.LogLevel == 5) return;
             Logger.LogLevel = 5;
-            Logger.Log("Log Level Changed to : " + Logger.LogLevel, Color.Black);
+            Logger.Log("Log Level Changed to : " + Logger.LogLevel, LogColor.Black);
             UpdateLogLevelMenu();
         }
 
-        private void recordPlayerSettingsToolStripMenuItem_Click(object sender, EventArgs e)
+        private void recordPlayerSettingsMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            ME3Server.bRecordPlayerSettings = recordPlayerSettingsToolStripMenuItem.Checked;
-            Logger.Log("MITM | Record player settings = " + ME3Server.bRecordPlayerSettings, Color.Black);
+            ME3Server.bRecordPlayerSettings = !ME3Server.bRecordPlayerSettings;
+            Logger.Log("MITM | Record player settings = " + ME3Server.bRecordPlayerSettings, LogColor.Black);
         }
 
-        private void importPlayerSettingsToolStripMenuItem_Click(object sender, EventArgs e)
+        private async void importPlayerSettingsMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             bool activePlayer = false;
             foreach (Player.PlayerInfo p in Player.AllPlayers)
                 activePlayer |= p.isActive;
             if (!activePlayer)
             {
-                MessageBox.Show("You must be already connected through PSE before using this function.", "Import player settings");
+                Logger.Log("You must be already connected through PSE before using Import player settings.", LogColor.Red);
                 return;
             }
 
-            OpenFileDialog o = new OpenFileDialog();
-            o.Filter = "*.txt|*.txt";
-            if (o.ShowDialog() != System.Windows.Forms.DialogResult.OK)
-                return;
+            var topLevel = TopLevel.GetTopLevel(this);
+            var files = await topLevel.StorageProvider.OpenFilePickerAsync(new Avalonia.Platform.Storage.FilePickerOpenOptions
+            {
+                Title = "Import player settings",
+                FileTypeFilter = new[] { new Avalonia.Platform.Storage.FilePickerFileType("Text files") { Patterns = new[] { "*.txt" } } },
+                AllowMultiple = false
+            });
+
+            if (files.Count == 0) return;
+            var file = files[0];
 
             try
             {
-                List<string> Lines = new List<string>(System.IO.File.ReadAllLines(o.FileName));
+                using var stream = await file.OpenReadAsync();
+                using var reader = new StreamReader(stream);
+                var text = await reader.ReadToEndAsync();
+                List<string> Lines = new List<string>(text.Split('\n').Select(l => l.TrimEnd('\r')));
                 if (Lines.Count < 6)
                 {
-                    Logger.Log("[Import player settings] Invalid player file (number of lines)", Color.Red);
+                    Logger.Log("[Import player settings] Invalid player file (number of lines)", LogColor.Red);
                     return;
                 }
                 Lines.RemoveRange(0, 5);
@@ -288,7 +272,7 @@ namespace ME3Server_WV
                     string[] s = line.Split(Char.Parse("="));
                     if (s.Length != 2)
                     {
-                        Logger.Log("[Import player settings] Invalid player file (line split)", Color.Red);
+                        Logger.Log("[Import player settings] Invalid player file (line split)", LogColor.Red);
                         return;
                     }
                     keys.Add(s[0]);
@@ -299,26 +283,33 @@ namespace ME3Server_WV
             }
             catch (Exception ex)
             {
-                Logger.Log("[Import player settings] " + ME3Server.GetExceptionMessage(ex), Color.Red);
+                Logger.Log("[Import player settings] " + ME3Server.GetExceptionMessage(ex), LogColor.Red);
             }
         }
 
-        private void restartToolStripMenuItem_Click(object sender, EventArgs e)
+        private void restartMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            Application.Restart();
+            // Cross-platform restart: start a new process and exit current
+            var exePath = Environment.ProcessPath;
+            if (exePath != null)
+            {
+                System.Diagnostics.Process.Start(exePath);
+                Environment.Exit(0);
+            }
         }
 
-        private void activateToolStripMenuItem_Click(object sender, EventArgs e)
+        private void activateMITMMenuItem_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             ME3Server.isMITM = !ME3Server.isMITM;
-            Logger.Log("MITM mode = " + ME3Server.isMITM, Color.Black);
+            Logger.Log("MITM mode = " + ME3Server.isMITM, LogColor.Black);
             UpdateMITMMenuState();
-            recordPlayerSettingsToolStripMenuItem.Checked = false;
             ME3Server.bRecordPlayerSettings = false;
         }
 
         private void Frontend_Shown(object sender, EventArgs e)
         {
+            string version = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "unknown";
+            this.Title = "Syndicate 2012 Private Server Emulator by Kadrim, build: " + version;
             ME3Server.Start();
         }
     }

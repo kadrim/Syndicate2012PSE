@@ -1,0 +1,24 @@
+{
+  "name": "Syndicate 2012 PSE",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit"
+      ],
+      "settings": {
+        "dotnet.defaultSolution": "ME3Server_WV.sln"
+      }
+    }
+  },
+  "postCreateCommand": "dotnet restore ME3Server_WV.sln",
+  "remoteUser": "vscode"
+}

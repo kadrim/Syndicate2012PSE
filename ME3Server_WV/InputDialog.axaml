@@ -1,0 +1,16 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ME3Server_WV.InputDialog"
+        Title="Input"
+        Width="350" Height="160"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+    <StackPanel Margin="15" Spacing="10">
+        <TextBlock x:Name="promptText" TextWrapping="Wrap"/>
+        <TextBox x:Name="inputBox"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+            <Button Content="OK" Width="80" Click="OK_Click"/>
+            <Button Content="Cancel" Width="80" Click="Cancel_Click"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

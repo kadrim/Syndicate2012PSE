@@ -1,15 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Windows.Forms;
+using Avalonia.Controls;
 
 namespace ME3Server_WV
 {
-    public partial class GUI_PlayerSettings : Form
+    public partial class GUI_PlayerSettings : Window
     {
         public Player.PlayerInfo player;
 
@@ -22,12 +17,13 @@ namespace ME3Server_WV
         {
             if (player == null)
                 return;
-            listBox1.Items.Clear();
+            var items = new List<string>();
             foreach (Player.PlayerInfo.SettingEntry set in player.Settings)
-                listBox1.Items.Add(set.Key);
+                items.Add(set.Key);
+            listBox1.ItemsSource = items;
         }
 
-        private void listBox1_SelectedIndexChanged(object sender, EventArgs e)
+        private void listBox1_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             int n = listBox1.SelectedIndex;
             if (n == -1)
@@ -35,12 +31,12 @@ namespace ME3Server_WV
             rtb1.Text = player.Settings[n].Data;
         }
 
-        private void toolStripButton1_Click(object sender, EventArgs e)
+        private void saveButton_Click(object sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             int n = listBox1.SelectedIndex;
             if (n == -1)
                 return;
-            player.UpdateSettings(listBox1.Items[n].ToString(), rtb1.Text);
+            player.UpdateSettings(listBox1.SelectedItem.ToString(), rtb1.Text);
         }
     }
 }

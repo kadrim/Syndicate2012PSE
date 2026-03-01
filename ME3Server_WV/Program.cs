@@ -1,10 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using System.Windows.Forms;
+using Avalonia;
 
 namespace ME3Server_WV
 {
@@ -14,7 +12,7 @@ namespace ME3Server_WV
         /// The main entry point for the application.
         /// </summary>
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
             CultureInfo culture = CultureInfo.CreateSpecificCulture("en-US");
             CultureInfo.DefaultThreadCurrentCulture = culture;
@@ -22,29 +20,24 @@ namespace ME3Server_WV
             Thread.CurrentThread.CurrentCulture = culture;
             Thread.CurrentThread.CurrentUICulture = culture;
 
-            if (ME3Server.IsRunningAsAdmin())
+            string[] commandlineargs = System.Environment.GetCommandLineArgs();
+            ME3Server.isMITM = commandlineargs.Contains("-mitm", StringComparer.InvariantCultureIgnoreCase);
+            ME3Server.silentStart = commandlineargs.Contains("-silentstart", StringComparer.InvariantCultureIgnoreCase);
+            ME3Server.silentExit = commandlineargs.Contains("-silentexit", StringComparer.InvariantCultureIgnoreCase);
+
+            if (commandlineargs.Contains("-deactivateonly", StringComparer.InvariantCultureIgnoreCase))
             {
-                string[] commandlineargs = System.Environment.GetCommandLineArgs();
-                ME3Server.isMITM = commandlineargs.Contains("-mitm", StringComparer.InvariantCultureIgnoreCase);
-                ME3Server.silentStart = commandlineargs.Contains("-silentstart", StringComparer.InvariantCultureIgnoreCase);
-                ME3Server.silentExit = commandlineargs.Contains("-silentexit", StringComparer.InvariantCultureIgnoreCase);
-                if (commandlineargs.Contains("-deactivateonly", StringComparer.InvariantCultureIgnoreCase))
-                {
-                    Frontend.DeactivateRedirection();
-                }
-                else
-                {
-                    Application.EnableVisualStyles();
-                    Application.SetCompatibleTextRenderingDefault(false);
-                    Application.Run(new Frontend());
-                    //Application.Run(new GUI_PacketEditor());
-                    //Application.Run(new GUI_ProfileCreator());
-                }
+                Frontend.DeactivateRedirection();
             }
             else
             {
-                MessageBox.Show("This program requires administrator rights.", "ME3Server_WV", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
             }
         }
+
+        public static AppBuilder BuildAvaloniaApp()
+            => AppBuilder.Configure<App>()
+                .UsePlatformDetect()
+                .LogToTrace();
     }
 }

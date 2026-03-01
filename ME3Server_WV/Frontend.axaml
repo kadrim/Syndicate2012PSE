@@ -1,0 +1,50 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:ME3Server_WV"
+        x:Class="ME3Server_WV.Frontend"
+        Title="Syndicate 2012 Private Server Emulator"
+        Width="800" Height="500">
+    <DockPanel>
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="Server">
+                <MenuItem Header="Show Log" x:Name="showLogMenuItem" Click="showLogMenuItem_Click"/>
+                <MenuItem Header="Show Player List" x:Name="showPlayerListMenuItem" Click="showPlayerListMenuItem_Click"/>
+                <MenuItem Header="Show Game List" x:Name="showGameListMenuItem" Click="showGameListMenuItem_Click"/>
+                <MenuItem Header="MITM">
+                    <MenuItem Header="Activate" x:Name="activateMITMMenuItem" Click="activateMITMMenuItem_Click"/>
+                    <Separator/>
+                    <MenuItem Header="Record player settings" x:Name="recordPlayerSettingsMenuItem" Click="recordPlayerSettingsMenuItem_Click" IsEnabled="False"/>
+                    <MenuItem Header="Import player settings" x:Name="importPlayerSettingsMenuItem" Click="importPlayerSettingsMenuItem_Click" IsEnabled="False"/>
+                </MenuItem>
+                <Separator/>
+                <MenuItem Header="Restart" x:Name="restartMenuItem" Click="restartMenuItem_Click"/>
+            </MenuItem>
+            <MenuItem Header="Tools">
+                <MenuItem Header="Hosts File">
+                    <MenuItem Header="Activate Redirection" Click="aktivateRedirectionMenuItem_Click"/>
+                    <MenuItem Header="Deactivate Redirection" Click="deactivateRedirectionMenuItem_Click"/>
+                    <MenuItem Header="Show Content" Click="showContentMenuItem_Click"/>
+                </MenuItem>
+                <MenuItem Header="Packet Viewer" Click="packetEditorMenuItem_Click"/>
+                <MenuItem Header="Create Player Profile" Click="localProfileCreatorMenuItem_Click"/>
+                <MenuItem Header="Delete Logs" Click="deleteLogsMenuItem_Click"/>
+            </MenuItem>
+            <MenuItem Header="Log Level">
+                <MenuItem Header="Level 0 Most Critical" x:Name="level0MenuItem" Click="level0MenuItem_Click"/>
+                <MenuItem Header="Level 3 Moderate" x:Name="level3MenuItem" Click="level3MenuItem_Click"/>
+                <MenuItem Header="Level 5 Everything" x:Name="level5MenuItem" Click="level5MenuItem_Click"/>
+            </MenuItem>
+        </Menu>
+        <TabControl x:Name="tabControl">
+            <TabItem Header="Log" x:Name="logTab">
+                <local:GUI_Log x:Name="logView"/>
+            </TabItem>
+            <TabItem Header="Player List" x:Name="playerTab">
+                <local:GUI_Player x:Name="playerView"/>
+            </TabItem>
+            <TabItem Header="Game List" x:Name="gameListTab">
+                <local:GUI_GameList x:Name="gameListView"/>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+</Window>

@@ -5,3 +5,5 @@ PLAYER_FILES.txt
 /*.dll
 /*.dll.config
 /*.json
+/runtimes/
+/Syndicate2012Server

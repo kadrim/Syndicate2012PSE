@@ -1,0 +1,21 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="ME3Server_WV.GUI_ProfileCreator"
+        Title="Profile Creator"
+        Width="400" Height="250"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+    <StackPanel Margin="15" Spacing="10">
+        <Grid ColumnDefinitions="100,*" RowDefinitions="Auto,Auto,Auto">
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="Player ID:" VerticalAlignment="Center" Margin="0,0,0,8"/>
+            <TextBox x:Name="textBox1" Grid.Row="0" Grid.Column="1" IsReadOnly="True" IsEnabled="False" Margin="0,0,0,8"/>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Player Name:" VerticalAlignment="Center" Margin="0,0,0,8"/>
+            <TextBox x:Name="textBox2" Grid.Row="1" Grid.Column="1" TextChanged="textBox2_TextChanged" Margin="0,0,0,8"/>
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Password:" VerticalAlignment="Center"/>
+            <TextBox x:Name="textBox3" Grid.Row="2" Grid.Column="1"/>
+        </Grid>
+        <Button x:Name="button1" Content="Create Profile" HorizontalAlignment="Center" Click="button1_Click" Margin="0,10,0,0"/>
+    </StackPanel>
+</Window>

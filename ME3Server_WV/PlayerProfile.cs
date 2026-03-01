@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Microsoft.VisualBasic;
 
 namespace ME3Server_WV
 {
@@ -374,7 +373,7 @@ namespace ME3Server_WV
 
         public ME3PlayerClass(string ClassValue)
         {
-            string[] ClassFields = Strings.Split(ClassValue, ";");
+            string[] ClassFields = ClassValue.Split(";");
             if (ClassFields.Count() != 6)
                 throw new ArgumentException("ClassValue string must be 6 fields.");
             field1_Version1 = int.Parse(ClassFields[0]);
@@ -495,7 +494,7 @@ namespace ME3Server_WV
 
         public ME3PlayerChar(string strvalue)
         {
-            string[] CharSplit = Strings.Split(strvalue, ";");
+            string[] CharSplit = strvalue.Split(";");
             fields = CharSplit;
         }
 
@@ -653,7 +652,7 @@ namespace ME3Server_WV
 
         public ME3PlayerBanner(string lineBanner)
         {
-            string[] s = Strings.Split(lineBanner, "=");
+            string[] s = lineBanner.Split("=");
             bannerID = int.Parse(s[1]);
         }
 
@@ -733,7 +732,7 @@ namespace ME3Server_WV
 
         public static List<int> StringToIntegerList(string srcStr)
         {
-            string[] arrayStr = Strings.Split(srcStr, ",");
+            string[] arrayStr = srcStr.Split(",");
             var intList = new List<int>();
             foreach (string s in arrayStr)
                 intList.Add(int.Parse(s));

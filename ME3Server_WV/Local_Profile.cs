@@ -1,13 +1,13 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.IO.Compression;
-using System.Windows.Forms;
 using System.Security.Cryptography;
 
 namespace ME3Server_WV
 {
     public static class Local_Profile
     {
-        private static string loc = Path.GetDirectoryName(Application.ExecutablePath) + Path.DirectorySeparatorChar;
+        private static string loc = AppContext.BaseDirectory;
         private static byte[] tempprofile = File.ReadAllBytes(loc + "conf" + Path.DirectorySeparatorChar + "temp_profile.bin");
         public static byte[] CreateProfile(int ID, string AUTH)
         {

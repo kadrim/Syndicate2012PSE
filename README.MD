@@ -84,9 +84,7 @@ For help visit the official [Discord-Channel](https://discord.gg/sqGEkjCgDr)
 
 The game itself runs pretty decent on `SteamOS` and `Ubuntu` using [Steam](https://store.steampowered.com/about/) (add Syndicate as a non-steam game) and by turning on the compatibility using `Proton` (i.e. `Proton 9.0-4`, best results so far with `GE-Proton7-43`).
 
-To use the Server on a Linux machine you simply have to copy the file `Linux/compose.override.yaml` to the root directory of this project (so one directory up). If you are running this on a desktop with GUI you can enable the GUI by editing the copied file and setting `HEADLESS` to `false` and also run the command `xhost local:` to enable the usage of your Display within the container.
-
-Afterwards rebuild and rerun the services by executing:
+The Server runs natively on Linux. To run the dependency services:
 
 ```
 docker compose build
@@ -99,6 +97,54 @@ docker compose up
 - Save Stats of each Player
 - Add support for PS3 Version
 - Enable Cross-Platform play
+
+## Development
+
+### Prerequisites
+
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+
+### Dev Container
+
+This project includes a [Dev Container](.devcontainer/devcontainer.json) configuration. You can open it in VS Code with the Dev Containers extension or use GitHub Codespaces for a ready-to-go Linux development environment.
+
+To run the GUI from within the Dev Container, allow local connections to your X display on the host first:
+
+```bash
+xhost local:
+```
+
+### Building
+
+Clone the repository with submodules:
+
+```bash
+git clone --recurse-submodules https://github.com/kadrim/Syndicate2012PSE.git
+cd Syndicate2012PSE
+```
+
+Restore and build:
+
+```bash
+dotnet restore ME3Server_WV.sln
+dotnet build ME3Server_WV.sln
+```
+
+### Publishing
+
+To create a self-contained executable (no .NET runtime required on the target machine):
+
+**Windows:**
+```bash
+dotnet publish ME3Server_WV/ME3Server_WV.csproj -c Release -r win-x64 --self-contained true -o publish/win-x64
+```
+
+**Linux:**
+```bash
+dotnet publish ME3Server_WV/ME3Server_WV.csproj -c Release -r linux-x64 --self-contained true -o publish/linux-x64
+```
+
+The UI is built with [Avalonia](https://avaloniaui.net/) and runs cross-platform on Windows and Linux.
 
 ## Thanks
 
