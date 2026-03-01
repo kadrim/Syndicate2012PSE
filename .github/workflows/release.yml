@@ -47,6 +47,7 @@ jobs:
         $dir = "Release-Syndicate2012PSE_${{ github.ref_name }}_${{ matrix.archive-name }}"
         mkdir $dir
         mkdir "$dir\logs"
+        xcopy ME3Server_WV\bin\Debug $dir /s /e
         xcopy "publish\${{ matrix.rid }}" $dir /s /e /y
         xcopy Docker "$dir\Docker" /s /e /i
         xcopy Linux "$dir\Linux" /s /e /i
@@ -63,6 +64,7 @@ jobs:
       run: |
         DIR="Release-Syndicate2012PSE_${{ github.ref_name }}_${{ matrix.archive-name }}"
         mkdir -p "$DIR/logs"
+        cp -r ME3Server_WV/bin/Debug/* "$DIR/"
         cp -r publish/${{ matrix.rid }}/* "$DIR/"
         cp -r Docker "$DIR/Docker"
         cp -r Linux "$DIR/Linux"
