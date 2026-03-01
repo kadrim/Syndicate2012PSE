@@ -16,26 +16,18 @@ Currently this is a heavy WIP and will only run with the PC or Xbox360 Version o
 
 - A legal copy of the game on one of the supported platforms.
 - Windows PC, to host the services
-- [Docker](https://www.docker.com/products/docker-desktop/) installed
+- [Docker](https://www.docker.com/products/docker-desktop/) installed (only needed for Xenia/Xbox360 web services)
 
 Download the [Latest Release](https://github.com/kadrim/Syndicate2012PSE/releases/latest) and extract the contents somewhere on your harddisk.
 
 Edit the following files:
 
-- `docker-compose.yml` | Replace the current value of `CLIENT_HOST` with the IP-Adress of your Windows PC
 - `conf/conf.txt` | Replace the current values of `RedirectIP` and `REDIHOST` with the IP-Adress of your Windows PC
-- `Xenia-WebServices/titles/45410923/servers.json` | Replace the current value of `address` with the IP-Adress of your Windows PC
+- `Xenia-WebServices/titles/45410923/servers.json` | Replace the current value of `address` with the IP-Adress of your Windows PC (only needed for Xbox360/Xenia)
 
-Then open a terminal in the folder where you extracted the current release and run the following commands:
+Then execute the file `Syndicate2012Server.exe`. Your private server is now prepared! Other Players can connect to your server, they only have to do the steps for the corresponding client, mentioned below.
 
-```
-docker compose build
-docker compose up
-```
-
-Afterwards execute the file `Syndicate2012Server.exe`. Your private server is now prepared! Other Players can connect to your server, they only have to do the steps for the corresponding client, mentioned below.
-
-> Note: After a reboot you only have to execute the step `docker compose up` and execute `Syndicate2012Server.exe`. The `docker compose build` step is only needed when you downloaded a new release.
+> Note: Docker is only needed for Xenia (Xbox 360) web services (`docker compose up` for the xenia-backend and xenia-database services).
 
 ### PC Client
 
@@ -58,7 +50,7 @@ Edit your `hosts` file under `%windir%\system32\drivers\etc` and enter your IP A
 
 Use a Hex-Editor like [HxD](https://en.wikipedia.org/wiki/HxD) to edit the game file `System/Win32_x86_Release/MSystem.dll` and look for the string `gosredirector.ea.com`. Replace it with `gosredirector.local` and add the Hex-Code `00` directly after the string
 
-Edit `docker-compose.yml` again and set the value of `LOCAL_FQDN` to `true`. Stop the current docker containers in the previously opened terminal by hitting `CTRL+C` and then run `docker compose up` again.
+Edit `conf/conf.txt` and set the value of `LOCAL_FQDN` to `True`. Then restart `Syndicate2012Server.exe`.
 
 #### Playing
 

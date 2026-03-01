@@ -29,6 +29,7 @@
     <PackageReference Include="Avalonia" Version="11.2.3" />
     <PackageReference Include="Avalonia.Desktop" Version="11.2.3" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.3" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.WebUtilities" Version="8.0.0" />
   </ItemGroup>
 </Project>

@@ -36,6 +36,14 @@ REDIPORT = 0x378B
 REDISECU = 0x0
 REDIXDNS = 0x0
 
+#Redirector SSLv3 Certificate (in cert/ directory)
+#Set LOCAL_FQDN to True if using gosredirector.local instead of gosredirector.ea.com (Option 2)
+#This automatically selects the correct certificate
+LOCAL_FQDN=False
+#Or override the certificate filename directly (leave empty to auto-select based on LOCAL_FQDN):
+RedirectorCert=
+RedirectorCertPassword=
+
 #Server_Boot_01
 ANON  =0x0
 ASRC  =303107

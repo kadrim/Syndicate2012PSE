@@ -5,6 +5,7 @@
   },
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "runArgs": ["--network=host"],
   "features": {
     "ghcr.io/devcontainers/features/common-utils:2": {}
   },
