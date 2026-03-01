@@ -91,6 +91,10 @@ namespace ME3Server_WV
             {
                 RedirectorListener.Stop();
             }
+            if (tRedirectorPlain != null && tRedirectorPlain.IsAlive)
+            {
+                RedirectorPlainListener.Stop();
+            }
             if (tMainServer != null && tMainServer.IsAlive)
             {
                 MainServerListener.Stop();
@@ -437,38 +441,64 @@ namespace ME3Server_WV
 #endregion
 
 #region Redirector
-        public static X509Certificate2 RedirectorCert = new X509Certificate2(AppContext.BaseDirectory + "cert" + Path.DirectorySeparatorChar + "redirector.pfx", "123456");
         public static TcpListener RedirectorListener;
+        public static TcpListener RedirectorPlainListener;
         public static Thread tRedirector;
+        public static Thread tRedirectorPlain;
         public struct RedirectorHandlerStruct
         {
             public NetworkStream stream;
             public int ID;
             public TcpClient tcpClient;
+            public bool useSSL;
         }
         public static void threadRedirectorListener(object objs)
         {
             Logger.Log("[Redirector] Starting...", LogColor.Black);            
             try
             {
+                // Load SSLv3 certificate
+                string certName = Config.FindEntry("RedirectorCert");
+                if (string.IsNullOrEmpty(certName))
+                {
+                    // Auto-select certificate based on LOCAL_FQDN setting
+                    bool localFqdn = Config.GetBoolean("LOCAL_FQDN");
+                    certName = localFqdn ? "gosredirector_mod_local.pfx" : "gosredirector_mod.pfx";
+                    Logger.Log("[Redirector] LOCAL_FQDN = " + localFqdn + ", using certificate: " + certName, LogColor.Black);
+                }
+                string certPath = loc + "cert" + Path.DirectorySeparatorChar + certName;
+                string certPassword = Config.FindEntry("RedirectorCertPassword");
+                SSLv3Handler.LoadCertificate(certPath, certPassword);
+
                 string IP = Config.FindEntry("IP");
-                if (IP == "")
-                    RedirectorListener = new TcpListener(IPAddress.Parse("127.0.0.1"), 42130);
-                else
-                    RedirectorListener = new TcpListener(IPAddress.Parse(IP), 42130);
+                IPAddress bindIP = (IP == "") ? IPAddress.Parse("127.0.0.1") : IPAddress.Parse(IP);
+
+                // SSLv3 listener on port 42127 (for real game clients)
+                RedirectorListener = new TcpListener(bindIP, 42127);
                 RedirectorListener.Start();
-                Logger.Log("[Redirector] Started listening on " + EndpointToString(RedirectorListener.LocalEndpoint), LogColor.Black);
+                Logger.Log("[Redirector] SSLv3 listener started on " + EndpointToString(RedirectorListener.LocalEndpoint), LogColor.Black);
+
+                // Plain TCP listener on port 42130 (for Xenia / unencrypted clients)
+                RedirectorPlainListener = new TcpListener(bindIP, 42130);
+                RedirectorPlainListener.Start();
+                Logger.Log("[Redirector] Plain TCP listener started on " + EndpointToString(RedirectorPlainListener.LocalEndpoint), LogColor.Black);
+
+                // Start the plain TCP accept loop on its own thread
+                tRedirectorPlain = new Thread(threadRedirectorPlainAcceptLoop);
+                tRedirectorPlain.Start();
+
                 int counter = 0;
                 while (!exitnow)
                 {
                     TcpClient tcpClient = RedirectorListener.AcceptTcpClient();
-                    Logger.Log("[Redirector] New client connected", LogColor.DarkGreen);
+                    Logger.Log("[Redirector] New SSLv3 client connected", LogColor.DarkGreen, 3);
                     Thread tHandler = new Thread(threadRedirectorClientHandler);
                     RedirectorHandlerStruct h = new RedirectorHandlerStruct();
                     h.stream = tcpClient.GetStream();
                     h.ID = counter++;
                     h.tcpClient = tcpClient;
-                    tHandler.Start(h);                    
+                    h.useSSL = true;
+                    tHandler.Start(h);
                 }
 
             }
@@ -477,17 +507,59 @@ namespace ME3Server_WV
                 Logger.Log("[Redirector] Crashed:\n" + GetExceptionMessage(e), LogColor.Red);
             }
         }
+        private static int plainCounter = 0;
+        public static void threadRedirectorPlainAcceptLoop(object objs)
+        {
+            try
+            {
+                while (!exitnow)
+                {
+                    TcpClient tcpClient = RedirectorPlainListener.AcceptTcpClient();
+                    Logger.Log("[Redirector] New plain TCP client connected (Xenia)", LogColor.DarkGreen, 3);
+                    Thread tHandler = new Thread(threadRedirectorClientHandler);
+                    RedirectorHandlerStruct h = new RedirectorHandlerStruct();
+                    h.stream = tcpClient.GetStream();
+                    h.ID = 10000 + plainCounter++;
+                    h.tcpClient = tcpClient;
+                    h.useSSL = false;
+                    tHandler.Start(h);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger.Log("[Redirector Plain] Crashed:\n" + GetExceptionMessage(e), LogColor.Red);
+            }
+        }
         public static void threadRedirectorClientHandler(object objs)
         {
             RedirectorHandlerStruct h = (RedirectorHandlerStruct)objs;
-            Logger.Log("[Redirector Handler " + h.ID + "] Client handler started", LogColor.Black);
-            NetworkStream clientStream = h.stream;
+            string mode = h.useSSL ? "SSLv3" : "Plain";
+            Logger.Log("[Redirector Handler " + h.ID + "] Client handler started (" + mode + ")", LogColor.Gray, 5);
+            Stream clientStream;
+            if (h.useSSL)
+            {
+                try
+                {
+                    clientStream = SSLv3Handler.AcceptSSLv3(h.stream);
+                    Logger.Log("[Redirector Handler " + h.ID + "] SSLv3 handshake completed", LogColor.DarkGreen, 3);
+                }
+                catch (Exception e)
+                {
+                    Logger.Log("[Redirector Handler " + h.ID + "] SSLv3 handshake failed: " + GetExceptionMessage(e), LogColor.Red);
+                    try { h.tcpClient.Close(); } catch (Exception) { }
+                    return;
+                }
+            }
+            else
+            {
+                clientStream = h.stream;
+            }
             try
             {
                 byte[] clientRequest;
                 while (!exitnow)
                 {
-                    clientRequest = ReadContent(clientStream);
+                    clientRequest = h.useSSL ? ReadContentFromStream(clientStream) : ReadContent((NetworkStream)clientStream);
                     if (clientRequest.Length != 0)
                     {
                         clientStream.Flush();
@@ -3387,6 +3459,31 @@ namespace ME3Server_WV
             catch (Exception e)
             {
                 System.Diagnostics.Debug.Print("ReadContentSSL | " + GetExceptionMessage(e));
+                return res.ToArray();
+            }
+        }
+        /// <summary>
+        /// Reads Blaze packet content from a generic Stream (e.g. BouncyCastle SSLv3 stream).
+        /// Similar to ReadContent but works with any Stream type, not just NetworkStream.
+        /// </summary>
+        public static byte[] ReadContentFromStream(Stream stream)
+        {
+            MemoryStream res = new MemoryStream();
+            try
+            {
+                byte[] buff = new byte[0x10000];
+                int bytesRead;
+                while ((bytesRead = stream.Read(buff, 0, 0x10000)) > 0)
+                {
+                    res.Write(buff, 0, bytesRead);
+                    if (CheckIfStreamComplete(res))
+                        break;
+                }
+                return res.ToArray();
+            }
+            catch (Exception e)
+            {
+                System.Diagnostics.Debug.Print("ReadContentFromStream | " + GetExceptionMessage(e));
                 return res.ToArray();
             }
         }
