@@ -2644,7 +2644,9 @@ namespace ME3Server_WV
                                 // Don't set EXIP/INIP here - the host's own createGame response
                                 // must have 0,0 or the Xbox client rejects it.
                                 // IP fallback is applied on-demand in join code (HNET/PNET for joiners).
+                                string xddrHex = player.XboxXDDR != null ? BitConverter.ToString(player.XboxXDDR).Replace("-", " ") : "null";
                                 Logger.Log("[DIAG][7802:14] Xbox updateNetworkInfo: XUID=0x" + player.XboxXUID.ToString("X") + " XDDR=blob[" + (player.XboxXDDR != null ? player.XboxXDDR.Length : 0) + "] IP=" + player.IP + ":3659", LogColor.Cyan);
+                                Logger.Log("[DIAG][7802:14] XDDR hex dump: " + xddrHex, LogColor.Cyan);
                             }
                             else
                             {
@@ -3300,35 +3302,32 @@ namespace ME3Server_WV
                 Blaze.TdfInteger GSTA = (Blaze.TdfInteger)GAME.Values[8];
                 GSTA.Value = game.GAMESTATE;
                 Blaze.TdfList HNET = (Blaze.TdfList)GAME.Values[10];
-                List<Blaze.Tdf> entry = ((List<Blaze.TdfStruct>)HNET.List)[0].Values;
-                Blaze.TdfStruct EXIP = (Blaze.TdfStruct)entry[0];
-                Blaze.TdfInteger IP = (Blaze.TdfInteger)EXIP.Values[0];
-                Blaze.TdfInteger PORT = (Blaze.TdfInteger)EXIP.Values[1];
-                // For Xbox hosts, keep HNET at 0,0 — P2P goes through XNet sessions (XNNC/XSES).
-                // The game's Blaze TDF parser expects EXIP/INIP structs in HNET.
-                // Sending Xbox-format XDDR/XUID here corrupts the struct layout and crashes
-                // the client during NotifyGameSetup parsing.
-                // The joiner gets the host's XNADDR from the backend via XSessionJoinRemote.
-                uint hnetIP = (uint)game.Creator.EXIP.IP;
-                uint hnetPort = game.Creator.EXIP.PORT;
-                if (hnetIP == 0 && game.Creator.IsXbox)
+                // TEST 13: Revert HNET to EXIP/INIP format (Test 12 proved Xbox format
+                // crashes even earlier — during "searching for game" instead of "joining game").
+                // HNET must always use PC struct format {EXIP,INIP} regardless of platform.
+                // For Xbox hosts, use TCP connection IP + port 1000 (Xenia's P2P port).
                 {
-                    Logger.Log("[DIAG][JoinInfo] Xbox host: HNET kept at 0,0 (P2P via XNet sessions)", LogColor.Cyan);
+                    List<Blaze.Tdf> hnetEntry = ((List<Blaze.TdfStruct>)HNET.List)[0].Values;
+                    Blaze.TdfStruct EXIP = (Blaze.TdfStruct)hnetEntry[0];
+                    Blaze.TdfInteger IP = (Blaze.TdfInteger)EXIP.Values[0];
+                    Blaze.TdfInteger PORT = (Blaze.TdfInteger)EXIP.Values[1];
+                    if (game.Creator.IsXbox && game.Creator.EXIP.IP == 0)
+                    {
+                        IP.Value = game.Creator.GetIPvalue();
+                        PORT.Value = 1000;
+                    }
+                    else
+                    {
+                        IP.Value = (uint)game.Creator.EXIP.IP;
+                        PORT.Value = game.Creator.EXIP.PORT;
+                    }
+                    Blaze.TdfStruct INIP = (Blaze.TdfStruct)hnetEntry[1];
+                    Blaze.TdfInteger INIP_IP = (Blaze.TdfInteger)INIP.Values[0];
+                    Blaze.TdfInteger INIP_PORT = (Blaze.TdfInteger)INIP.Values[1];
+                    INIP_IP.Value = IP.Value;
+                    INIP_PORT.Value = PORT.Value;
+                    Logger.Log("[DIAG][JoinInfo] HNET TEST 15 — PC format: EXIP=" + GetStringFromIP((uint)IP.Value) + ":" + PORT.Value + " INIP=" + GetStringFromIP((uint)INIP_IP.Value) + ":" + INIP_PORT.Value, LogColor.Cyan);
                 }
-                IP.Value = hnetIP;
-                PORT.Value = hnetPort;
-                Blaze.TdfStruct INIP = (Blaze.TdfStruct)entry[1];
-                IP = (Blaze.TdfInteger)INIP.Values[0];
-                PORT = (Blaze.TdfInteger)INIP.Values[1];
-                uint hnetINIP = (uint)game.Creator.INIP.IP;
-                uint hnetINPort = game.Creator.INIP.PORT;
-                if (hnetINIP == 0 && game.Creator.IsXbox)
-                {
-                    // Keep at 0,0 — same as EXIP for consistency
-                }
-                IP.Value = hnetINIP;
-                PORT.Value = hnetINPort;
-                Logger.Log("[DIAG][JoinInfo] HNET EXIP=" + GetStringFromIP(hnetIP) + ":" + hnetPort + " INIP=" + GetStringFromIP(hnetINIP) + ":" + hnetINPort, LogColor.Cyan);
                 Blaze.TdfInteger HSES = (Blaze.TdfInteger)GAME.Values[11];
                 HSES.Value = 0x112888C1;
                 Blaze.TdfStruct NQOS = (Blaze.TdfStruct)GAME.Values[14];
@@ -3357,16 +3356,23 @@ namespace ME3Server_WV
                     {
                         ((Blaze.TdfString)gtdf).Value = game.VSTR;
                     }
-                    // Forward Xbox session data from host's finalizeGameCreation
-                    if (gtdf.Label == "XNNC" && gtdf is Blaze.TdfBlob && game.XNNC != null)
+                    // TEST 15: Zeroed XSES blob — test whether CONTENT or just SIZE matters.
+                    // Test 13: empty blob[0] = no crash but stuck (game needs XSES size>0 to proceed).
+                    // Test 14: host's blob[256] = crash at PC=0x82BB3060, r25="sess" — XSES content crashes.
+                    // Test 15: zero blob[256] = tests if game just needs 256-byte blob to proceed,
+                    //          or if it crashes from trying to process any 256-byte XSES.
+                    if (gtdf.Label == "XNNC" && gtdf is Blaze.TdfBlob)
                     {
-                        ((Blaze.TdfBlob)gtdf).Data = game.XNNC;
-                        Logger.Log("[DIAG][JoinInfo] Forwarding XNNC blob[" + game.XNNC.Length + "] to joiner", LogColor.Cyan);
+                        ((Blaze.TdfBlob)gtdf).Data = new byte[0];
+                        string hexDump = game.XNNC != null ? BitConverter.ToString(game.XNNC).Replace("-", " ") : "null";
+                        Logger.Log("[DIAG][JoinInfo] TEST 15: XNNC kept empty blob[0] (host had blob[" + (game.XNNC != null ? game.XNNC.Length.ToString() : "null") + "]: " + hexDump + ")", LogColor.Cyan);
                     }
-                    if (gtdf.Label == "XSES" && gtdf is Blaze.TdfBlob && game.XSES != null)
+                    if (gtdf.Label == "XSES" && gtdf is Blaze.TdfBlob)
                     {
-                        ((Blaze.TdfBlob)gtdf).Data = game.XSES;
-                        Logger.Log("[DIAG][JoinInfo] Forwarding XSES blob[" + game.XSES.Length + "] to joiner", LogColor.Cyan);
+                        // Send 256 bytes of zeros instead of host's XSES
+                        ((Blaze.TdfBlob)gtdf).Data = new byte[256];
+                        string hostHexDump = game.XSES != null ? BitConverter.ToString(game.XSES, 0, Math.Min(64, game.XSES.Length)).Replace("-", " ") : "null";
+                        Logger.Log("[DIAG][JoinInfo] TEST 15: Sending ZEROED XSES blob[256] (host had blob[" + (game.XSES != null ? game.XSES.Length.ToString() : "null") + "] first 64: " + hostHexDump + ")", LogColor.Cyan);
                     }
                 }
                 #endregion
@@ -3374,9 +3380,9 @@ namespace ME3Server_WV
                 Blaze.TdfList PROS = (Blaze.TdfList)form[1];
                 for (int i = 0; i < game.OtherPlayers.Count + 1; i++)
                 {
-                    entry = ((List<Blaze.TdfStruct>)PROS.List)[i].Values;
-                    GID = (Blaze.TdfInteger)entry[2];
-                    GID.Value = game.ID;
+                    List<Blaze.Tdf> entry = ((List<Blaze.TdfStruct>)PROS.List)[i].Values;
+                    Blaze.TdfInteger prosGID = (Blaze.TdfInteger)entry[2];
+                    prosGID.Value = game.ID;
                     Player.PlayerInfo tmppl;
                     switch (i)
                     {
@@ -3396,14 +3402,17 @@ namespace ME3Server_WV
                     PID.Value = tmppl.PlayerID;
                     Blaze.TdfInteger SID = (Blaze.TdfInteger)entry[8];
                     SID.Value = i;
-                    entry[6] = GetTdfUnionAuto(tmppl, "PNET");
+                    // TEST 10: Use PC format (type=2) for PNET in PROS entries, matching
+                    // what CreateGameStartPacket does for the host. The game's NotifyGameSetup
+                    // parser may not handle type=0 (Xbox XDDR) unions in PROS entries.
+                    entry[6] = GetTdfUnionIP(tmppl, "PNET");
                     Blaze.TdfInteger STAT = (Blaze.TdfInteger)entry[9];
                     if (tmppl.ID == player.ID)
                         STAT.Value = 2;
                     Blaze.TdfInteger UID = (Blaze.TdfInteger)entry[13];
                     UID.Value = tmppl.PlayerID;
                     // Log PROS entry structure for diagnostics
-                    Logger.Log("[DIAG][PROS][" + i + "] " + tmppl.Name + ": fields=" + entry.Count + " GID=" + GID.Value + " PID=" + PID.Value + " SID=" + SID.Value + " STAT=" + STAT.Value + " UID=" + UID.Value, LogColor.Cyan);
+                    Logger.Log("[DIAG][PROS][" + i + "] " + tmppl.Name + ": fields=" + entry.Count + " GID=" + prosGID.Value + " PID=" + PID.Value + " SID=" + SID.Value + " STAT=" + STAT.Value + " UID=" + UID.Value, LogColor.Cyan);
                     for (int fi = 0; fi < entry.Count; fi++)
                     {
                         string fval = "[" + fi + "] " + entry[fi].Label + "(type=" + entry[fi].Type + ")";
@@ -3450,7 +3459,8 @@ namespace ME3Server_WV
                 pform = Blaze.ReadBlazePacket(new MemoryStream(buff));
                 form = Blaze.ReadPacketContent(pform);
                 Blaze.TdfStruct DATA = (Blaze.TdfStruct)form[0];
-                DATA.Values[0] = GetTdfUnionAuto(player, "ADDR");
+                // TEST 10: Use PC format (type=2) for ADDR, matching host's CreateGameStartPacket.
+                DATA.Values[0] = GetTdfUnionIP(player, "ADDR");
                 Blaze.TdfStruct QDAT = (Blaze.TdfStruct)DATA.Values[7];
                 NATT = (Blaze.TdfInteger)QDAT.Values[1];
                 NATT.Value = NAT_Type;
