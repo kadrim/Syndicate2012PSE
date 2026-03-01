@@ -3030,18 +3030,26 @@ namespace ME3Server_WV
                                     NATT.Value = NAT_Type;
                                     break;
                                 case "HNET":
+                                    // Host's own HNET: always use PC format (EXIP/INIP).
+                                    // The host already knows its own address. Sending Xbox-format
+                                    // XDDR/XUID here causes Xenia to attempt self-resolution,
+                                    // which tears down the XSession immediately.
+                                    // Xbox HNET format is only used in CreateJoiningDedicateServerInfo
+                                    // (where the joiner needs the host's XDDR to resolve its XNADDR).
                                     Blaze.TdfList HNET = (Blaze.TdfList)tdf2;
-                                    List<Blaze.Tdf> entry = ((List<Blaze.TdfStruct>)HNET.List)[0].Values;
-                                    Blaze.TdfStruct EXIP = (Blaze.TdfStruct)entry[0];
-                                    Blaze.TdfInteger IP = (Blaze.TdfInteger)EXIP.Values[0];
-                                    Blaze.TdfInteger PORT = (Blaze.TdfInteger)EXIP.Values[1];
-                                    IP.Value = player.EXIP.IP;
-                                    PORT.Value = player.EXIP.PORT;
-                                    Blaze.TdfStruct INIP = (Blaze.TdfStruct)entry[1];
-                                    IP = (Blaze.TdfInteger)INIP.Values[0];
-                                    PORT = (Blaze.TdfInteger)INIP.Values[1];
-                                    IP.Value = player.INIP.IP;
-                                    PORT.Value = player.INIP.PORT;
+                                    {
+                                        List<Blaze.Tdf> entry = ((List<Blaze.TdfStruct>)HNET.List)[0].Values;
+                                        Blaze.TdfStruct EXIP = (Blaze.TdfStruct)entry[0];
+                                        Blaze.TdfInteger IP = (Blaze.TdfInteger)EXIP.Values[0];
+                                        Blaze.TdfInteger PORT = (Blaze.TdfInteger)EXIP.Values[1];
+                                        IP.Value = player.EXIP.IP;
+                                        PORT.Value = player.EXIP.PORT;
+                                        Blaze.TdfStruct INIP = (Blaze.TdfStruct)entry[1];
+                                        IP = (Blaze.TdfInteger)INIP.Values[0];
+                                        PORT = (Blaze.TdfInteger)INIP.Values[1];
+                                        IP.Value = player.INIP.IP;
+                                        PORT.Value = player.INIP.PORT;
+                                    }
                                     break;
                                 case "GSET":
                                     // Override template GSET with the client's actual game settings
@@ -3103,7 +3111,9 @@ namespace ME3Server_WV
                                     UID.Value = player.UserID;
                                     break;
                                 case "PNET":
-                                    // Fix: assign to the list, not to local variable
+                                    // Host's own PNET: use IP-based (type=2) format.
+                                    // Xbox host already knows its own address; sending type=0 XDDR/XUID
+                                    // causes Xenia to attempt self-resolution and tear down the session.
                                     result[j] = GetTdfUnionIP(player, "PNET");
                                     break;
                             }
@@ -3120,6 +3130,9 @@ namespace ME3Server_WV
             resp = Blaze.ReadBlazePacket(new MemoryStream(buff));
             form = Blaze.ReadPacketContent(resp);
             Blaze.TdfStruct DATA = (Blaze.TdfStruct)form[0];
+            // Host's own ADDR: use IP-based (type=2) format.
+            // Xbox host already knows its own address; sending type=0 XDDR/XUID
+            // causes Xenia to attempt self-resolution and tear down the session.
             DATA.Values[0] = GetTdfUnionIP(player, "ADDR");
             Blaze.TdfStruct QDAT = (Blaze.TdfStruct)DATA.Values[7];
             Blaze.TdfInteger NATT2 = (Blaze.TdfInteger)QDAT.Values[1];
@@ -3291,9 +3304,11 @@ namespace ME3Server_WV
                 Blaze.TdfStruct EXIP = (Blaze.TdfStruct)entry[0];
                 Blaze.TdfInteger IP = (Blaze.TdfInteger)EXIP.Values[0];
                 Blaze.TdfInteger PORT = (Blaze.TdfInteger)EXIP.Values[1];
-                // For Xbox hosts, keep HNET at 0,0 — P2P goes through XNet sessions (XNNC/XSES)
-                // Using the TCP connection IP here would conflict with the Blaze server IP in XNet,
-                // causing the game's networking code to crash when it confuses P2P with server connection.
+                // For Xbox hosts, keep HNET at 0,0 — P2P goes through XNet sessions (XNNC/XSES).
+                // The game's Blaze TDF parser expects EXIP/INIP structs in HNET.
+                // Sending Xbox-format XDDR/XUID here corrupts the struct layout and crashes
+                // the client during NotifyGameSetup parsing.
+                // The joiner gets the host's XNADDR from the backend via XSessionJoinRemote.
                 uint hnetIP = (uint)game.Creator.EXIP.IP;
                 uint hnetPort = game.Creator.EXIP.PORT;
                 if (hnetIP == 0 && game.Creator.IsXbox)

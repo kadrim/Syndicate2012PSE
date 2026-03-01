@@ -6,6 +6,9 @@ WORKDIR /xenia-web-service
 
 COPY submodules/Xenia-WebServices/. .
 
+# Overlay modified session controller with response body logging
+COPY Xenia-WebServices/session.controller.ts ./src/infrastructure/presentation/controllers/session.controller.ts
+
 RUN chown -R appuser:appgroup .
 
 USER appuser
