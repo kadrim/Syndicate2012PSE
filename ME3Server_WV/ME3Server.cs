@@ -2641,6 +2641,16 @@ namespace ME3Server_WV
                                     else if (field.Label == "XUID" && field is Blaze.TdfInteger)
                                         player.XboxXUID = ((Blaze.TdfInteger)field).Value;
                                 }
+                                // Patch XDDR wPortOnline: Xenia reports 36000 (backend API port)
+                                // but the actual P2P port is 1000. wPortOnline is at offset 8, big-endian uint16.
+                                if (player.XboxXDDR != null && player.XboxXDDR.Length >= 10)
+                                {
+                                    ushort oldPort = (ushort)((player.XboxXDDR[8] << 8) | player.XboxXDDR[9]);
+                                    ushort newPort = 1000;
+                                    player.XboxXDDR[8] = (byte)(newPort >> 8);   // 0x03
+                                    player.XboxXDDR[9] = (byte)(newPort & 0xFF); // 0xE8
+                                    Logger.Log("[DIAG][7802:14] XDDR wPortOnline patched: " + oldPort + " -> " + newPort, LogColor.Cyan);
+                                }
                                 // Don't set EXIP/INIP here - the host's own createGame response
                                 // must have 0,0 or the Xbox client rejects it.
                                 // IP fallback is applied on-demand in join code (HNET/PNET for joiners).
@@ -3300,7 +3310,12 @@ namespace ME3Server_WV
                 Blaze.TdfInteger GSID = (Blaze.TdfInteger)GAME.Values[7];
                 GSID.Value = game.GSID != 0 ? game.GSID : 0x4000000618E41C;
                 Blaze.TdfInteger GSTA = (Blaze.TdfInteger)GAME.Values[8];
-                GSTA.Value = game.GAMESTATE;
+                // TEST 16: Override GSTA to 0x1 (same as host's initial NotifyGameSetup).
+                // Host gets GSTA=0x1 and works fine without XSES.
+                // Joiner gets GSTA=0x82 (from setGameState) and enters a code path that requires XSES.
+                // By sending GSTA=0x1, the joiner might take the same non-crashing "creation" path.
+                GSTA.Value = 0x1;
+                Logger.Log("[DIAG][JoinInfo] TEST 16: GSTA overridden to 0x1 (was " + game.GAMESTATE + ")", LogColor.Cyan);
                 Blaze.TdfList HNET = (Blaze.TdfList)GAME.Values[10];
                 // TEST 13: Revert HNET to EXIP/INIP format (Test 12 proved Xbox format
                 // crashes even earlier — during "searching for game" instead of "joining game").
@@ -3326,7 +3341,7 @@ namespace ME3Server_WV
                     Blaze.TdfInteger INIP_PORT = (Blaze.TdfInteger)INIP.Values[1];
                     INIP_IP.Value = IP.Value;
                     INIP_PORT.Value = PORT.Value;
-                    Logger.Log("[DIAG][JoinInfo] HNET TEST 15 — PC format: EXIP=" + GetStringFromIP((uint)IP.Value) + ":" + PORT.Value + " INIP=" + GetStringFromIP((uint)INIP_IP.Value) + ":" + INIP_PORT.Value, LogColor.Cyan);
+                    Logger.Log("[DIAG][JoinInfo] HNET TEST 16 — PC format: EXIP=" + GetStringFromIP((uint)IP.Value) + ":" + PORT.Value + " INIP=" + GetStringFromIP((uint)INIP_IP.Value) + ":" + INIP_PORT.Value, LogColor.Cyan);
                 }
                 Blaze.TdfInteger HSES = (Blaze.TdfInteger)GAME.Values[11];
                 HSES.Value = 0x112888C1;
@@ -3356,23 +3371,20 @@ namespace ME3Server_WV
                     {
                         ((Blaze.TdfString)gtdf).Value = game.VSTR;
                     }
-                    // TEST 15: Zeroed XSES blob — test whether CONTENT or just SIZE matters.
-                    // Test 13: empty blob[0] = no crash but stuck (game needs XSES size>0 to proceed).
-                    // Test 14: host's blob[256] = crash at PC=0x82BB3060, r25="sess" — XSES content crashes.
-                    // Test 15: zero blob[256] = tests if game just needs 256-byte blob to proceed,
-                    //          or if it crashes from trying to process any 256-byte XSES.
+                    // TEST 16: Zeroed XSES and empty XNNC (same as Tests 13/15).
+                    // Tests 14-15 proved: ANY 256-byte XSES blob crashes (content doesn't matter).
+                    // The crash is in Xenia's session handling, triggered by blob SIZE.
+                    // Combined with GSTA=0x1 and REAS type=0 to bypass the join-session code path.
                     if (gtdf.Label == "XNNC" && gtdf is Blaze.TdfBlob)
                     {
                         ((Blaze.TdfBlob)gtdf).Data = new byte[0];
                         string hexDump = game.XNNC != null ? BitConverter.ToString(game.XNNC).Replace("-", " ") : "null";
-                        Logger.Log("[DIAG][JoinInfo] TEST 15: XNNC kept empty blob[0] (host had blob[" + (game.XNNC != null ? game.XNNC.Length.ToString() : "null") + "]: " + hexDump + ")", LogColor.Cyan);
+                        Logger.Log("[DIAG][JoinInfo] TEST 16: XNNC kept empty blob[0]", LogColor.Cyan);
                     }
                     if (gtdf.Label == "XSES" && gtdf is Blaze.TdfBlob)
                     {
-                        // Send 256 bytes of zeros instead of host's XSES
-                        ((Blaze.TdfBlob)gtdf).Data = new byte[256];
-                        string hostHexDump = game.XSES != null ? BitConverter.ToString(game.XSES, 0, Math.Min(64, game.XSES.Length)).Replace("-", " ") : "null";
-                        Logger.Log("[DIAG][JoinInfo] TEST 15: Sending ZEROED XSES blob[256] (host had blob[" + (game.XSES != null ? game.XSES.Length.ToString() : "null") + "] first 64: " + hostHexDump + ")", LogColor.Cyan);
+                        ((Blaze.TdfBlob)gtdf).Data = new byte[0];
+                        Logger.Log("[DIAG][JoinInfo] TEST 16: XSES kept empty blob[0]", LogColor.Cyan);
                     }
                 }
                 #endregion
@@ -3446,11 +3458,15 @@ namespace ME3Server_WV
                 #endregion
 #region REAS
                 Blaze.TdfUnion REAS = (Blaze.TdfUnion)form[2];
-                Blaze.TdfStruct VALU = (Blaze.TdfStruct)REAS.UnionContent;
-                Blaze.TdfInteger MSID = (Blaze.TdfInteger)VALU.Values[2];
-                MSID.Value = game.MID;
-                Blaze.TdfInteger USID = (Blaze.TdfInteger)VALU.Values[4];
-                USID.Value = player.PlayerID;
+                // TEST 16: Override REAS to type=0 {DCTX=0} (same as host gets).
+                // Host gets REAS type=0, joiner normally gets type=3 {FIT,MAXF,MSID,RSLT,USID}.
+                // Type=3 might trigger the XSES-dependent "matchmaking join" path.
+                // Type=0 should make the game treat this like a fresh game creation.
+                REAS.UnionType = 0;
+                List<Blaze.Tdf> reasValues = new List<Blaze.Tdf>();
+                reasValues.Add(Blaze.TdfInteger.Create("DCTX", 0));
+                REAS.UnionContent = Blaze.TdfStruct.Create("VALU", reasValues);
+                Logger.Log("[DIAG][JoinInfo] TEST 16: REAS overridden to type=0 {DCTX=0} (was type=3)", LogColor.Cyan);
                 #endregion
                 buff = Blaze.CreatePacket(0x04, 0x14, 0, 0x2000, 0, form);
                 res.Write(buff, 0, buff.Length);
@@ -3464,7 +3480,7 @@ namespace ME3Server_WV
                 Blaze.TdfStruct QDAT = (Blaze.TdfStruct)DATA.Values[7];
                 NATT = (Blaze.TdfInteger)QDAT.Values[1];
                 NATT.Value = NAT_Type;
-                USID = (Blaze.TdfInteger)form[1];
+                Blaze.TdfInteger USID = (Blaze.TdfInteger)form[1];
                 USID.Value = player.PlayerID;
                 buff = Blaze.CreatePacket(0x7802, 0x1, 0, 0x2000, 0, form);
                 res.Write(buff, 0, buff.Length);
